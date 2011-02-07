@@ -1,13 +1,16 @@
-#define DEBUG_TYPE "hello"
+#define DEBUG_TYPE "CallGraph"
 #include "llvm/Pass.h"
 #include "llvm/Function.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/Statistic.h"
+#include "llvm/ADT/DepthFirstIterator.h"
 #include "llvm/Analysis/CallGraph.h"
 
 using namespace llvm;
 
-STATISTIC(HelloCounter, "Counts number of functions greeted");
+STATISTIC(FunctionCounter, "Counts number of functions");
+
+STATISTIC(EdgeCounter, "Counts number of Call Graph edges");
 
 namespace {
   struct Instru : public ModulePass {
@@ -16,7 +19,12 @@ namespace {
 
     virtual bool runOnModule(Module &M) {
 	CallGraph &CG = getAnalysis<CallGraph>();
-      CG.print(errs(),&M);
+      //CG.print(errs(),&M);
+      for(df_iterator<CallGraph*> CG_iterB = df_begin <CallGraph*> (&CG), CG_iterE = df_end <CallGraph*> (&CG); CG_iterB != CG_iterE; ++CG_iterB){
+      	FunctionCounter++;
+      	EdgeCounter = EdgeCounter + (*CG_iterB)->size();
+      	(*CG_iterB)->print(errs());
+      }
       return false;
     }
 
