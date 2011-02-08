@@ -8,6 +8,8 @@
 #include "llvm/ADT/ilist.h"
 using namespace llvm;
 
+// TODO: Need to initialize the MIN variables with some large value (INF)
+
 STATISTIC(BasicBlockMax, "Counts number of basic blocks in the entire program.");
 STATISTIC(BasicBlockMin, "Counts number of basic blocks in the entire program.");
 STATISTIC(BasicBlockAvg, "Counts number of basic blocks in the entire program.");
