@@ -7,7 +7,7 @@
 #
 ##===----------------------------------------------------------------------===##
 
-LEVEL = ../../../../llvm-objects
+LEVEL = ../../..
 LIBRARYNAME = LLVMHello1
 LOADABLE_MODULE = 1
 USEDLIBS =
