@@ -6,6 +6,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/ilist.h"
+#include "llvm/Analysis/Dominators.h"
 using namespace llvm;
 
 // TODO: Need to initialize the MIN variables with some large value (INF)
@@ -20,11 +21,15 @@ STATISTIC(CFGEdgeMax, "Counts number of CFG edges in the entire program.");
 STATISTIC(CFGEdgeMin, "Counts number of CFG edges in the entire program.");
 STATISTIC(CFGEdgeAvg, "Counts number of CFG edges in the entire program.");
 
+STATISTIC(DomMax, "Counts number of dominated nodes.");
+STATISTIC(DomMin, "Counts number of dominated nodes.");
+STATISTIC(DomAvg, "Counts number of dominated nodes.");
+
 namespace {
 // Hello - The first implementation, without getAnalysisUsage.
-	struct SimplePass : public FunctionPass {
+	struct SimplePass : public DominatorTree {
 		static char ID; // Pass identification, replacement for typeid
-		SimplePass() : FunctionPass(ID) {}
+		SimplePass() : DominatorTree() {}
 		
 		virtual bool runOnFunction(Function &F) {
 			FunctionCounter++;
@@ -43,7 +48,20 @@ namespace {
 			CFGEdgeMin = (localCFGCounter < CFGEdgeMin) ? localBBCounter : CFGEdgeMin;
 			CFGEdgeAvg = ((FunctionCounter - 1)*CFGEdgeAvg + localCFGCounter) / FunctionCounter;
 			
+			// do depth first traversal of dominator tree
+			// count number of nodes dominated by each node
+			// in dominator tree
+			
+			if ( getRootNode() != NULL ) {
+				DomAvg =  getRootNode()->getDFSNumIn();
+			}
+			
 			return false;
+		}
+
+		virtual int countDominatedNodes(DomTreeNode *node) {
+			
+			return 0;
 		}
 	};
 }

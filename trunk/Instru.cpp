@@ -5,6 +5,7 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/DepthFirstIterator.h"
 #include "llvm/Analysis/CallGraph.h"
+#include <stdio.h>
 
 using namespace llvm;
 
@@ -18,13 +19,17 @@ namespace {
     Instru() : ModulePass(ID) {}
 
     virtual bool runOnModule(Module &M) {
+	
 	CallGraph &CG = getAnalysis<CallGraph>();
-      //CG.print(errs(),&M);
+        //CG.print(errs(),&M);
+	//printf("CG has %i nodes",CG.size());
+//	printf("test");
       for(df_iterator<CallGraph*> CG_iterB = df_begin <CallGraph*> (&CG), CG_iterE = df_end <CallGraph*> (&CG); CG_iterB != CG_iterE; ++CG_iterB){
       	FunctionCounter++;
       	EdgeCounter = EdgeCounter + (*CG_iterB)->size();
       	(*CG_iterB)->print(errs());
       }
+	fprintf(stderr, "test");
       return false;
     }
 
