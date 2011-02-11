@@ -21,15 +21,19 @@ STATISTIC(CFGEdgeMax, "Counts number of CFG edges in the entire program.");
 STATISTIC(CFGEdgeMin, "Counts number of CFG edges in the entire program.");
 STATISTIC(CFGEdgeAvg, "Counts number of CFG edges in the entire program.");
 
-STATISTIC(DomMax, "Counts number of dominated nodes.");
-STATISTIC(DomMin, "Counts number of dominated nodes.");
-STATISTIC(DomAvg, "Counts number of dominated nodes.");
+STATISTIC(DomOutMax, "Counts number of dominated nodes.");
+STATISTIC(DomOutMin, "Counts number of dominated nodes.");
+STATISTIC(DomOutAvg, "Counts number of dominated nodes.");
+
+STATISTIC(DomInMax, "Counts number of nodes dominating.");
+STATISTIC(DomInMin, "Counts number of nodes dominating.");
+STATISTIC(DomInAvg, "Counts number of nodes dominating.");
 
 namespace {
 // Hello - The first implementation, without getAnalysisUsage.
-	struct SimplePass : public DominatorTree {
+	struct SimplePass : public FunctionPass {
 		static char ID; // Pass identification, replacement for typeid
-		SimplePass() : DominatorTree() {}
+		SimplePass() : FunctionPass(ID) {}
 		
 		virtual bool runOnFunction(Function &F) {
 			FunctionCounter++;
@@ -48,20 +52,33 @@ namespace {
 			CFGEdgeMin = (localCFGCounter < CFGEdgeMin) ? localBBCounter : CFGEdgeMin;
 			CFGEdgeAvg = ((FunctionCounter - 1)*CFGEdgeAvg + localCFGCounter) / FunctionCounter;
 			
-			// do depth first traversal of dominator tree
-			// count number of nodes dominated by each node
-			// in dominator tree
-			
-			if ( getRootNode() != NULL ) {
-				DomAvg =  getRootNode()->getDFSNumIn();
-			}
+			DominatorTree &domTree = getAnalysis<DominatorTree>();
+
+			DomTreeNode *rootNode  =  domTree.getRootNode();
+			countDomNodes(domTree, F, rootNode, localBBCounter);
 			
 			return false;
 		}
 
-		virtual int countDominatedNodes(DomTreeNode *node) {
+	        // We don't modify the program, so we preserve all analyses
+	        virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+			AU.addRequired<DominatorTree>();      
+			AU.setPreservesAll();
+	        }
+
+		virtual void countDomNodes(DominatorTree &domTree, Function &F, DomTreeNode *currNode, unsigned int numNodes) {
+			DomOutMin = (DomOutMin < currNode->getDFSNumOut()) ? DomOutMin : currNode->getDFSNumOut();
+			DomOutMax = (DomOutMax > currNode->getDFSNumOut()) ? DomOutMax : currNode->getDFSNumOut();
+			DomOutAvg = DomOutAvg + (currNode->getDFSNumOut()/numNodes);
 			
-			return 0;
+			DomInMin = (DomInMin < currNode->getDFSNumIn()) ? DomInMin : currNode->getDFSNumIn();
+			DomInMax = (DomInMax > currNode->getDFSNumIn()) ? DomInMax : currNode->getDFSNumIn();
+			DomInAvg = DomInAvg + (currNode->getDFSNumIn()/numNodes);
+			
+			for (Function::iterator BBiter = F.begin();  BBiter != F.end(); ++BBiter){
+				DomTreeNode *node = domTree.getNode(BBiter);
+				countDomNodes(domTree, F, node, numNodes);
+			}
 		}
 	};
 }
