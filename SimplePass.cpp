@@ -54,8 +54,16 @@ namespace {
 			
 			DominatorTree &domTree = getAnalysis<DominatorTree>();
 
-			DomTreeNode *rootNode  =  domTree.getRootNode();
-			countDomNodes(domTree, F, rootNode, localBBCounter);
+			for (Function::iterator BBiter = F.begin();  BBiter != F.end(); ++BBiter){
+				DomTreeNode *currNode = domTree.getNode(BBiter);
+				DomOutMin = (DomOutMin < currNode->getDFSNumOut()) ? DomOutMin : currNode->getDFSNumOut();
+				DomOutMax = (DomOutMax > currNode->getDFSNumOut()) ? DomOutMax : currNode->getDFSNumOut();
+				DomOutAvg = DomOutAvg + (currNode->getDFSNumOut()/localBBCounter);
+			
+				DomInMin = (DomInMin < currNode->getDFSNumIn()) ? DomInMin : currNode->getDFSNumIn();
+				DomInMax = (DomInMax > currNode->getDFSNumIn()) ? DomInMax : currNode->getDFSNumIn();
+				DomInAvg = DomInAvg + (currNode->getDFSNumIn()/localBBCounter);				
+			}
 			
 			return false;
 		}
@@ -65,21 +73,6 @@ namespace {
 			AU.addRequired<DominatorTree>();      
 			AU.setPreservesAll();
 	        }
-
-		virtual void countDomNodes(DominatorTree &domTree, Function &F, DomTreeNode *currNode, unsigned int numNodes) {
-			DomOutMin = (DomOutMin < currNode->getDFSNumOut()) ? DomOutMin : currNode->getDFSNumOut();
-			DomOutMax = (DomOutMax > currNode->getDFSNumOut()) ? DomOutMax : currNode->getDFSNumOut();
-			DomOutAvg = DomOutAvg + (currNode->getDFSNumOut()/numNodes);
-			
-			DomInMin = (DomInMin < currNode->getDFSNumIn()) ? DomInMin : currNode->getDFSNumIn();
-			DomInMax = (DomInMax > currNode->getDFSNumIn()) ? DomInMax : currNode->getDFSNumIn();
-			DomInAvg = DomInAvg + (currNode->getDFSNumIn()/numNodes);
-			
-			for (Function::iterator BBiter = F.begin();  BBiter != F.end(); ++BBiter){
-				DomTreeNode *node = domTree.getNode(BBiter);
-				countDomNodes(domTree, F, node, numNodes);
-			}
-		}
 	};
 }
 
