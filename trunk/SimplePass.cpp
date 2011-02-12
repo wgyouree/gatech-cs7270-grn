@@ -7,6 +7,7 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/ilist.h"
 #include "llvm/Analysis/Dominators.h"
+#include <set>
 using namespace llvm;
 
 // TODO: Need to initialize the MIN variables with some large value (INF)
@@ -66,13 +67,23 @@ namespace {
 			}
 
 			// remove dead code
+			set<BasicBlock> visitedNodes;
 			BasicBlock &entryBlock = F.getEntryBlock();
+			/*
 			for (Function::iterator BBiter = F.begin(); BBiter != F.end(); ++BBiter) {
 				if ( BBiter != entryBlock ) {
 					if ( BBiter->getSinglePredecessor() == NULL ) {
 						//BBiter->removeFromParent();
 						recursiveRemove(BBiter);
 					}
+				}
+			}
+			*/
+			recursiveVisit(entryBlock, visitedNodes);
+			
+			for (Function::iterator BBiter = F.begin(); BBiter != F.end(); ++BBiter) {
+				if ( visitedNodes.find(BBiter) == NULL ) {
+					BBiter->removeFromParent();
 				}
 			}
 			
@@ -85,7 +96,7 @@ namespace {
 			AU.addRequired<DominatorTree>();      
 			//AU.setPreservesAll();
 	        }
-	        
+	        /*
 	        void recursiveRemove(BasicBlock *bb){
 				int i, numSuccessors;
 				BasicBlock *child;
@@ -96,7 +107,19 @@ namespace {
 						recursiveRemove(child);
 				}
 				bb->removeFromParent();
+			}*/
+	        
+	        void recursiveVisit(BasicBlock &bb, set<BasicBlock> visited){
+			int i, numSuccessors;
+			BasicBlock *child;
+			visited.insert(bb);
+			numSuccessors = bb->getTerminator()->getNumSuccessors();
+			for (i = 0; i < numSuccessors; i++){
+				child = bb->getTerminator()->getSuccessor(i);
+				if (child->getUniquePredecessor() == bb)
+					recursiveVisit(child);
 			}
+		}
 	};
 }
 
