@@ -55,6 +55,7 @@ namespace {
 			
 			DominatorTree &domTree = getAnalysis<DominatorTree>();
 
+			/*
 			for (Function::iterator BBiter = F.begin();  BBiter != F.end(); ++BBiter){
 				DomTreeNode *currNode = domTree.getNode(BBiter);
 				DomOutMin = (DomOutMin < currNode->getDFSNumOut()) ? DomOutMin : currNode->getDFSNumOut();
@@ -65,28 +66,24 @@ namespace {
 				DomInMax = (DomInMax > currNode->getDFSNumIn()) ? DomInMax : currNode->getDFSNumIn();
 				DomInAvg = DomInAvg + (currNode->getDFSNumIn()/localBBCounter);				
 			}
+			*/
+			
+			// Count DomIn, DomOut
+			DomTreeNode *currNode = domTree.getNode(&(F.getEntryBlock()));
+			
+			unsigned int topDomOut = recursiveDomCount(currNode, 0);
 
 			// remove dead code
-			set<BasicBlock> visitedNodes;
-			BasicBlock &entryBlock = F.getEntryBlock();
-			/*
-			for (Function::iterator BBiter = F.begin(); BBiter != F.end(); ++BBiter) {
-				if ( BBiter != entryBlock ) {
-					if ( BBiter->getSinglePredecessor() == NULL ) {
-						//BBiter->removeFromParent();
-						recursiveRemove(BBiter);
-					}
-				}
-			}
-			*/
-			recursiveVisit(entryBlock, visitedNodes);
+			//std::set<BasicBlock> visitedNodes;
+			//BasicBlock &entryBlock = F.getEntryBlock();
 			
-			for (Function::iterator BBiter = F.begin(); BBiter != F.end(); ++BBiter) {
-				if ( visitedNodes.find(BBiter) == NULL ) {
-					BBiter->removeFromParent();
-				}
-			}
+			//recursiveVisit(entryBlock, visitedNodes);
 			
+			//for (Function::iterator BBiter = F.begin(); BBiter != F.end(); ++BBiter) {
+				//if ( visitedNodes.find(BBiter) == NULL ) {
+					//BBiter->removeFromParent();
+				//}
+			//}
 			
 			return false;
 		}
@@ -96,30 +93,27 @@ namespace {
 			AU.addRequired<DominatorTree>();      
 			//AU.setPreservesAll();
 	        }
-	        /*
-	        void recursiveRemove(BasicBlock *bb){
-				int i, numSuccessors;
-				BasicBlock *child;
-				numSuccessors = bb->getTerminator()->getNumSuccessors();
-				for (i = 0; i < numSuccessors; i++){
-					child = bb->getTerminator()->getSuccessor(i);
-					if (child->getUniquePredecessor() == bb)
-						recursiveRemove(child);
-				}
-				bb->removeFromParent();
-			}*/
 	        
-	        void recursiveVisit(BasicBlock &bb, set<BasicBlock> visited){
-			int i, numSuccessors;
-			BasicBlock *child;
-			visited.insert(bb);
-			numSuccessors = bb->getTerminator()->getNumSuccessors();
-			for (i = 0; i < numSuccessors; i++){
-				child = bb->getTerminator()->getSuccessor(i);
-				if (child->getUniquePredecessor() == bb)
-					recursiveVisit(child);
+	        //void recursiveVisit(BasicBlock &bb, std::set<BasicBlock> visited){
+				//int i, numSuccessors;
+				//BasicBlock *child;
+				//visited.insert(bb);
+				//numSuccessors = bb->getTerminator()->getNumSuccessors();
+				//for (i = 0; i < numSuccessors; i++){
+					//child = bb->getTerminator()->getSuccessor(i);
+					//if (child->getUniquePredecessor() == bb)
+						//recursiveVisit(child, visited);
+				//}
+			//}
+			
+			unsigned int recursiveDomCount(DomTreeNode *currNode, unsigned int DomIn){
+				unsigned int DomOut = 0;
+				const std::vector<DomTreeNodeBase<BasicBlock> *> &children = currNode->getChildren();
+				for (unsigned int i = 0; i < children.size(); i++){
+					DomOut += recursiveDomCount((DomTreeNode *)&children[i], DomIn + 1);
+				}
+				return DomOut;
 			}
-		}
 	};
 }
 
