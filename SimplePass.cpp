@@ -70,7 +70,8 @@ namespace {
 			for (Function::iterator BBiter = F.begin(); BBiter != F.end(); ++BBiter) {
 				if ( BBiter != entryBlock ) {
 					if ( BBiter->getSinglePredecessor() == NULL ) {
-						BBiter->removeFromParent();
+						//BBiter->removeFromParent();
+						recursiveRemove(BBiter);
 					}
 				}
 			}
@@ -84,6 +85,18 @@ namespace {
 			AU.addRequired<DominatorTree>();      
 			//AU.setPreservesAll();
 	        }
+	        
+	        void recursiveRemove(BasicBlock *bb){
+				int i, numSuccessors;
+				BasicBlock *child;
+				numSuccessors = bb->getTerminator()->getNumSuccessors();
+				for (i = 0; i < numSuccessors; i++){
+					child = bb->getTerminator()->getSuccessor(i);
+					if (child->getUniquePredecessor() == bb)
+						recursiveRemove(child);
+				}
+				bb->removeFromParent();
+			}
 	};
 }
 
