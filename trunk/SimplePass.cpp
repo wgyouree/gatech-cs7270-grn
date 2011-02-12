@@ -64,6 +64,17 @@ namespace {
 				DomInMax = (DomInMax > currNode->getDFSNumIn()) ? DomInMax : currNode->getDFSNumIn();
 				DomInAvg = DomInAvg + (currNode->getDFSNumIn()/localBBCounter);				
 			}
+
+			// remove dead code
+			BasicBlock &entryBlock = F.getEntryBlock();
+			for (Function::iterator BBiter = F.begin(); BBiter != F.end(); ++BBiter) {
+				if ( BBiter != entryBlock ) {
+					if ( BBiter->getSinglePredecessor() == NULL ) {
+						BBiter->removeFromParent();
+					}
+				}
+			}
+			
 			
 			return false;
 		}
@@ -71,7 +82,7 @@ namespace {
 	        // We don't modify the program, so we preserve all analyses
 	        virtual void getAnalysisUsage(AnalysisUsage &AU) const {
 			AU.addRequired<DominatorTree>();      
-			AU.setPreservesAll();
+			//AU.setPreservesAll();
 	        }
 	};
 }
