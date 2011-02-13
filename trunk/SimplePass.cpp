@@ -30,6 +30,14 @@ STATISTIC(DomInMax, "Counts number of nodes dominating.");
 STATISTIC(DomInMin, "Counts number of nodes dominating.");
 STATISTIC(DomInAvg, "Counts number of nodes dominating.");
 
+STATISTIC(LoopMax, "Counts number of single entry loops.");
+STATISTIC(LoopMin, "Counts number of single entry loops.");
+STATISTIC(LoopAvg, "Counts number of single entry loops.");
+
+STATISTIC(LoopBlockMax, "Counts number of single entry loop blocks.");
+STATISTIC(LoopBlockMin, "Counts number of single entry loop blocks.");
+STATISTIC(LoopBlockAvg, "Counts number of single entry loop blocks.");
+
 namespace {
 // Hello - The first implementation, without getAnalysisUsage.
 	struct SimplePass : public FunctionPass {
@@ -85,6 +93,32 @@ namespace {
 				//}
 			//}
 			
+			//Count Loops
+			std::set<BasicBlock*> globalSeenLoopBlocks;
+			unsigned int localLoopCounter = 0, localLoopBlockCounter = 0;
+			
+			for (Function::iterator BBiter = F.begin();  BBiter != F.end(); ++BBiter){
+				int numSuccessors = BBiter->getTerminator()->getNumSuccessors();
+				for(int successorID = 0; successorID < numSuccessors; successorID++)
+				{
+					BasicBlock* successor = BBiter->getTerminator()->getSuccessor(successorID);
+					if(domTree.dominates(successor,BBiter))
+					{
+						std::set<BasicBlock*> seenLoopBlocks;
+						localLoopCounter++;
+						localLoopBlockCounter += loopBlocksCount(BBiter,successor,seenLoopBlocks, globalSeenLoopBlocks);
+					}
+				}
+			}
+
+			LoopMax = (localLoopCounter > LoopMax) ? localLoopCounter : LoopMax;
+			LoopMin = (localLoopCounter < LoopMin) ? localLoopCounter : LoopMin;
+			LoopAvg = ((FunctionCounter - 1)*LoopAvg + localLoopCounter) / FunctionCounter;
+			
+			LoopBlockMax = (localLoopBlockCounter > LoopBlockMax) ? localLoopBlockCounter : LoopBlockMax;
+			LoopBlockMin = (localLoopBlockCounter < LoopBlockMin) ? localLoopBlockCounter : LoopBlockMin;
+			LoopBlockAvg = ((FunctionCounter - 1)*LoopBlockAvg + localLoopBlockCounter) / FunctionCounter;
+			
 			return false;
 		}
 
@@ -113,6 +147,34 @@ namespace {
 					DomOut += recursiveDomCount((DomTreeNode *)&children[i], DomIn + 1);
 				}
 				return DomOut;
+			}
+			
+			unsigned int loopBlocksCount(BasicBlock* lastBlock, BasicBlock* startBlock, std::set<BasicBlock*> seenLoopBlocks, std::set<BasicBlock*>& globalSeenLoopBlocks){
+				
+				unsigned int numBlocks = 1;
+				
+				if((globalSeenLoopBlocks.find(lastBlock)) != globalSeenLoopBlocks.end())
+				{
+					numBlocks = 0;
+				}
+					
+				else
+					globalSeenLoopBlocks.insert(lastBlock);
+					
+				if((seenLoopBlocks.find(lastBlock)) != seenLoopBlocks.end())
+					return 0;
+				
+				
+				if(lastBlock == startBlock)
+					return numBlocks;
+					
+				seenLoopBlocks.insert(lastBlock);
+				
+					
+				for (pred_iterator PI = pred_begin(lastBlock);  PI != pred_end(lastBlock); ++PI){
+					numBlocks += loopBlocksCount(*PI, startBlock,seenLoopBlocks, globalSeenLoopBlocks);			
+				}
+				return numBlocks;
 			}
 	};
 }
