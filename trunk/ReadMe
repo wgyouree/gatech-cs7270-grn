@@ -1,0 +1,24 @@
+InstruPass1 - To generate CallGraph based metrics
+InstruPass2 - To generate per function CFG based metrics
+
+Use passes like -dot-cfg, -dot-callgraph, -dot-dom to generate corresponding dot files which can be viewed and used for testing
+
+To invoke passes:
+opt -load {Path to LLVM Objects folder}/Release+Asserts/lib/LLVMCustom.so -instruPass1 -stats < test.bc
+opt -load {Path to LLVM Objects folder}/Release+Asserts/lib/LLVMCustom.so -instruPass2 -stats < test.bc
+opt -load {Path to LLVM Objects folder}/Release+Asserts/lib/LLVMCustom.so -deadCodeRemoval < test.bc
+
+
+
+
+To view dot files:
+dot -Tps {dot file name} | gv - &
+
+
+
+Note:
+For debugging, you can use;
+errs() << "Debug Statement;
+instead of the usual
+cout << "Debug Statement;
+
