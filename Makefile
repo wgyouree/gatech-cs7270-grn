@@ -8,7 +8,7 @@
 ##===----------------------------------------------------------------------===##
 
 LEVEL = ../../..
-LIBRARYNAME = LLVMHello1
+LIBRARYNAME = LLVMCustom
 LOADABLE_MODULE = 1
 USEDLIBS =
 
