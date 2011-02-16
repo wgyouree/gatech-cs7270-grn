@@ -142,7 +142,7 @@ namespace {
 				unsigned int DomOut = 0;
 				const std::vector<DomTreeNodeBase<BasicBlock> *> &children = currNode->getChildren();
 				for (unsigned int i = 0; i < children.size(); i++){
-					DomOut += recursiveDomCount((DomTreeNode *)&children[i], DomIn + 1);
+					DomOut += recursiveDomCount(children[i], DomIn + 1);
 				}
 				return DomOut;
 			}
