@@ -1,4 +1,4 @@
-#define DEBUG_TYPE "InstruPass1"
+#define DEBUG_TYPE "Instru_Pass1"
 #include "llvm/Pass.h"
 #include "llvm/Function.h"
 #include "llvm/Support/raw_ostream.h"
@@ -21,14 +21,19 @@ namespace {
     virtual bool runOnModule(Module &M) {
 	
 	CallGraph &CG = getAnalysis<CallGraph>();
-        //CG.print(errs(),&M);
-	//printf("CG has %i nodes",CG.size());
-//	printf("test");
-      for(df_iterator<CallGraph*> CG_iterB = df_begin <CallGraph*> (&CG), CG_iterE = df_end <CallGraph*> (&CG); CG_iterB != CG_iterE; ++CG_iterB){
-      	FunctionCounter++;
-      	EdgeCounter = EdgeCounter + (*CG_iterB)->size();
-      	(*CG_iterB)->print(errs());
-      }
+	//CG.print(errs(),&M);
+
+     for(df_iterator<CallGraph*> CG_iterB = df_begin<CallGraph*>(&CG), CG_iterE = df_end<CallGraph*>(&CG); CG_iterB != CG_iterE; ++CG_iterB){
+      	if ((*CG_iterB)->getFunction()){
+      		FunctionCounter++;
+      		EdgeCounter = EdgeCounter + (*CG_iterB)->size();
+      	}else{
+      		EdgeCounter -= (*CG_iterB)->getNumReferences();
+      	}
+	      
+      //	(*CG_iterB)->print(errs());
+     }
+      
       return false;
     }
 
@@ -37,6 +42,7 @@ namespace {
 	AU.addRequired<CallGraph>();      
 	AU.setPreservesAll();
     }
+    
   };
 }
 
