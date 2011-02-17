@@ -1,4 +1,4 @@
-#define DEBUG_TYPE "DeadCodeRemoval"
+#define DEBUG_TYPE "SimplePass"
 #include "llvm/Pass.h"
 #include "llvm/Function.h"
 #include "llvm/BasicBlock.h"
@@ -20,16 +20,16 @@ namespace {
 		
 		virtual bool runOnFunction(Function &F) {
 			// remove dead code
-			//std::set<BasicBlock> visitedNodes;
-			//BasicBlock &entryBlock = F.getEntryBlock();
+			std::set<BasicBlock*> visitedNodes;
+			BasicBlock &entryBlock = F.getEntryBlock();
 			
-			//recursiveVisit(entryBlock, visitedNodes);
+			recursiveVisit(entryBlock, visitedNodes);
 			
-			//for (Function::iterator BBiter = F.begin(); BBiter != F.end(); ++BBiter) {
-				//if ( visitedNodes.find(BBiter) == NULL ) {
-					//BBiter->removeFromParent();
-				//}
-			//}
+			for (Function::iterator BBiter = F.begin(); BBiter != F.end(); ++BBiter) {
+				if ( visitedNodes.find((BasicBlock*)BBiter) == visitedNodes.end() ) {
+					BBiter->removeFromParent();
+				}
+			}
 			
 			
 			return false;
@@ -41,17 +41,18 @@ namespace {
 			//AU.setPreservesAll();
 	        }
 	        
-	        //void recursiveVisit(BasicBlock &bb, std::set<BasicBlock> visited){
-				//int i, numSuccessors;
-				//BasicBlock *child;
-				//visited.insert(bb);
-				//numSuccessors = bb->getTerminator()->getNumSuccessors();
-				//for (i = 0; i < numSuccessors; i++){
-					//child = bb->getTerminator()->getSuccessor(i);
+	        void recursiveVisit(BasicBlock &bb, std::set<BasicBlock*> &visited){
+				int i, numSuccessors;
+				BasicBlock* child;
+				visited.insert(&bb);
+				numSuccessors = bb.getTerminator()->getNumSuccessors();
+				for (i = 0; i < numSuccessors; i++){
+					child = bb.getTerminator()->getSuccessor(i);
 					//if (child->getUniquePredecessor() == bb)
-						//recursiveVisit(child, visited);
-				//}
-			//}
+					if(visited.find(child) == visited.end())
+						recursiveVisit(*child, visited);
+				}
+			}
 			
 
 	};
