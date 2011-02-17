@@ -10,7 +10,7 @@
 #include <set>
 using namespace llvm;
 
-// TODO: Need to initialize the MIN variables with some large value (INF)
+#define INF 1000
 
 STATISTIC(BasicBlockMax, "Max number of basic blocks in a function.");
 STATISTIC(BasicBlockMin, "Min number of basic blocks in a function.");
@@ -22,12 +22,8 @@ STATISTIC(CFGEdgeMax, "Max number of CFG edges in a function.");
 STATISTIC(CFGEdgeMin, "Min number of CFG edges in a function.");
 STATISTIC(CFGEdgeAvg, "Avg number of CFG edges in a function.");
 
-STATISTIC(DomOutMax, "Max number of dominated nodes in a function.");
-STATISTIC(DomOutMin, "Min number of dominated nodes in a function.");
 STATISTIC(DomOutAvg, "Avg number of dominated nodes in a function.");
 
-STATISTIC(DomInMax, "Max number of nodes dominating in a function.");
-STATISTIC(DomInMin, "Min number of nodes dominating in a function.");
 STATISTIC(DomInAvg, "Avg number of nodes dominating in a function.");
 
 STATISTIC(LoopMax, "Max number of single entry loops in a function.");
@@ -41,10 +37,20 @@ STATISTIC(LoopBlockAvg, "Avg number of single entry loop blocks in a function.")
 namespace {
 	struct InstruPass2 : public FunctionPass {
 		static char ID; // Pass identification, replacement for typeid
-		InstruPass2() : FunctionPass(ID) {}
+		static unsigned int DomOutCum,DomInCum, BasicBlockCum, CFGEdgeCum;
+		
+		InstruPass2() : FunctionPass(ID) {		
+		}
 		
 		virtual bool runOnFunction(Function &F) {
 			FunctionCounter++;
+			if (FunctionCounter == 1){
+				BasicBlockMin = INF;
+				CFGEdgeMin = INF;
+				LoopMin = INF;
+				LoopBlockMin = INF;
+			}
+			
 			unsigned int localBBCounter = 0, localCFGCounter = 0;
 			
 			for (Function::iterator BBiter = F.begin();  BBiter != F.end(); ++BBiter){
@@ -54,44 +60,29 @@ namespace {
 			
 			BasicBlockMax = (localBBCounter > BasicBlockMax) ? localBBCounter : BasicBlockMax;
 			BasicBlockMin = (localBBCounter < BasicBlockMin) ? localBBCounter : BasicBlockMin;
-			BasicBlockAvg = ((FunctionCounter - 1)*BasicBlockAvg + localBBCounter) / FunctionCounter;
+			BasicBlockCum += localBBCounter;
+			BasicBlockAvg = BasicBlockCum / FunctionCounter;
 			
 			CFGEdgeMax = (localCFGCounter > CFGEdgeMax) ? localBBCounter : CFGEdgeMax;
 			CFGEdgeMin = (localCFGCounter < CFGEdgeMin) ? localBBCounter : CFGEdgeMin;
-			CFGEdgeAvg = ((FunctionCounter - 1)*CFGEdgeAvg + localCFGCounter) / FunctionCounter;
+			CFGEdgeCum += localCFGCounter;
+			CFGEdgeAvg = CFGEdgeCum / FunctionCounter;
 			
 			DominatorTree &domTree = getAnalysis<DominatorTree>();
-
-			/*
-			for (Function::iterator BBiter = F.begin();  BBiter != F.end(); ++BBiter){
-				DomTreeNode *currNode = domTree.getNode(BBiter);
-				DomOutMin = (DomOutMin < currNode->getDFSNumOut()) ? DomOutMin : currNode->getDFSNumOut();
-				DomOutMax = (DomOutMax > currNode->getDFSNumOut()) ? DomOutMax : currNode->getDFSNumOut();
-				DomOutAvg = DomOutAvg + (currNode->getDFSNumOut()/localBBCounter);
-			
-				DomInMin = (DomInMin < currNode->getDFSNumIn()) ? DomInMin : currNode->getDFSNumIn();
-				DomInMax = (DomInMax > currNode->getDFSNumIn()) ? DomInMax : currNode->getDFSNumIn();
-				DomInAvg = DomInAvg + (currNode->getDFSNumIn()/localBBCounter);				
-			}
-			*/
 			
 			// Count DomIn, DomOut
 			DomTreeNode *currNode = domTree.getNode(&(F.getEntryBlock()));
 			
-			unsigned int topDomOut = recursiveDomCount(currNode, 0);
+			// DomInMin has to be 0; no need to compute.
+			// And DomOutMin also has to be 0 (Leaf nodes of the dominator tree) 
+			unsigned int totalDomOut = 0, totalDomIn = 0;
+			recursiveDomCount(currNode, 1, &totalDomOut, &totalDomIn);
+			
+			DomOutCum += totalDomOut;
+			DomInCum += totalDomIn;
+			DomOutAvg = DomOutCum/BasicBlockCum;
+			DomInAvg = DomInCum/BasicBlockCum;
 
-			// remove dead code
-			//std::set<BasicBlock> visitedNodes;
-			//BasicBlock &entryBlock = F.getEntryBlock();
-			
-			//recursiveVisit(entryBlock, visitedNodes);
-			
-			//for (Function::iterator BBiter = F.begin(); BBiter != F.end(); ++BBiter) {
-				//if ( visitedNodes.find(BBiter) == NULL ) {
-					//BBiter->removeFromParent();
-				//}
-			//}
-			
 			//Count Loops
 			std::set<BasicBlock*> globalSeenLoopBlocks;
 			unsigned int localLoopCounter = 0, localLoopBlockCounter = 0;
@@ -125,25 +116,18 @@ namespace {
 			AU.addRequired<DominatorTree>();      
 			//AU.setPreservesAll();
 	        }
-	        
-	        //void recursiveVisit(BasicBlock &bb, std::set<BasicBlock> visited){
-				//int i, numSuccessors;
-				//BasicBlock *child;
-				//visited.insert(bb);
-				//numSuccessors = bb->getTerminator()->getNumSuccessors();
-				//for (i = 0; i < numSuccessors; i++){
-					//child = bb->getTerminator()->getSuccessor(i);
-					//if (child->getUniquePredecessor() == bb)
-						//recursiveVisit(child, visited);
-				//}
-			//}
-			
-			unsigned int recursiveDomCount(DomTreeNode *currNode, unsigned int DomIn){
+
+			unsigned int recursiveDomCount(DomTreeNode *currNode, unsigned int DomIn, unsigned int *totalDomOut, unsigned int *totalDomIn){
 				unsigned int DomOut = 0;
 				const std::vector<DomTreeNodeBase<BasicBlock> *> &children = currNode->getChildren();
-				for (unsigned int i = 0; i < children.size(); i++){
-					DomOut += recursiveDomCount(children[i], DomIn + 1);
+				if (children.size() == 0)
+					DomOut = 1;
+				unsigned int i;
+				for (i = 0; i < children.size(); i++){
+					DomOut += recursiveDomCount(children[i], DomIn + 1, totalDomOut, totalDomIn);
 				}
+				*totalDomIn += DomIn;
+				*totalDomOut += DomOut;
 				return DomOut;
 			}
 			
@@ -178,4 +162,8 @@ namespace {
 }
 
 char InstruPass2::ID = 0;
+unsigned int InstruPass2::DomOutCum = 0;
+unsigned int InstruPass2::DomInCum = 0;
+unsigned int InstruPass2::BasicBlockCum = 0;
+unsigned int InstruPass2::CFGEdgeCum = 0;
 INITIALIZE_PASS(InstruPass2, "instruPass2", "Instrumentation Pass 2 using CFG", false, false);
