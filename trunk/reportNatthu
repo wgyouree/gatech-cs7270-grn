@@ -1,0 +1,14 @@
+CS 6241: Project - phase 0
+
+Implementation of sub-problems:
+(2) Finding average, min and max number of basic blocks inside a function.
+		The number of basic blocks inside a function were found out by iterating over the Function, one basic block at a time.
+(3) Finding average, min and max number of CFGEdges inside a function.
+		While iterating over the function, for each basic block, the number of CFG edges originating from that particular block were found out by getting the number of successors of the terminator instruction of that basic block.
+(6) Finding average number of dominators for a basic block.
+(7) Finding average number of basic blocks dominated by a basic block.
+		The Dominator Tree data structure was used for these computations. For every function, the recursive algorithm starts with its entry block and finds (6) in a depth first manner while (7) in a breadth first manner.
+		The basic idea for calculating number of basic blocks dominated (D) by a basic block (BB) is that, D(BB) = 1 + summation of D(BBC) over all the children BBC of B.
+		The first term implies every block dominates itself, while the second term comes from the transitive property of the domination relation.
+		
+		The  basic idea for calculating number dominators (D) for a basic block (BB) is that, D(BB) = 1 + D(parent(BB)).
