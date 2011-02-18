@@ -1,24 +1,16 @@
-InstruPass1 - To generate CallGraph based metrics
-InstruPass2 - To generate per function CFG based metrics
+CS6241: Compiler Design - Project Phase 0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+README
+~~~~~~
 
-Use passes like -dot-cfg, -dot-callgraph, -dot-dom to generate corresponding dot files which can be viewed and used for testing
+The entire phase0 implementation is divided into 3 passes that are included in the single source file.
 
-To invoke passes:
-opt -load {Path to LLVM Objects folder}/Release+Asserts/lib/LLVMCustom.so -instruPass1 -stats < test.bc
-opt -load {Path to LLVM Objects folder}/Release+Asserts/lib/LLVMCustom.so -instruPass2 -stats < test.bc
-opt -load {Path to LLVM Objects folder}/Release+Asserts/lib/LLVMCustom.so -deadCodeRemoval < test.bc
+To build the shared object, run 'make'. The shared object should be created in the <llvm_build_dir>/Release/lib.
 
+To run the three passes on an object file run:
+opt -load <path_to_shared_object> -phase0-rmangal3-1 -phase0-rmangal3-2 -phase0-rmangal3-3 -stats < <input_bytecode_filepath>
 
-
-
-To view dot files:
-dot -Tps {dot file name} | gv - &
-
-
-
-Note:
-For debugging, you can use;
-errs() << "Debug Statement;
-instead of the usual
-cout << "Debug Statement;
+-phase0-rmangal3-1: Counts total number of functions and call edges in the call graph.
+-phase0-rmangal3-2: Counts rest of the parameters.
+-phase0-rmangal3-1: Dead code removal.
 
