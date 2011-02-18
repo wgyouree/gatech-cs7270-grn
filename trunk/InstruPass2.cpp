@@ -172,4 +172,4 @@ unsigned int InstruPass2::BasicBlockCum = 0;
 unsigned int InstruPass2::CFGEdgeCum = 0;
 unsigned int InstruPass2::LoopCum = 0;
 unsigned int InstruPass2::LoopBlockCum = 0;
-INITIALIZE_PASS(InstruPass2, "instruPass2", "Instrumentation Pass 2 using CFG", false, false);
+INITIALIZE_PASS(InstruPass2, "phase0-rmangal3-2", "Instrumentation Pass 2 using CFG", false, false);

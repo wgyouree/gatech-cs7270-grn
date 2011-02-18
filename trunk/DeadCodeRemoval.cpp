@@ -1,4 +1,4 @@
-#define DEBUG_TYPE "SimplePass"
+#define DEBUG_TYPE "DeadCodeRemoval"
 #include "llvm/Pass.h"
 #include "llvm/Function.h"
 #include "llvm/BasicBlock.h"
@@ -12,8 +12,10 @@ using namespace llvm;
 
 // TODO: Need to initialize the MIN variables with some large value (INF)
 
+STATISTIC(DeadNodesRemoved, "Number of Unreachable CFG Nodes Removed.");
 
 namespace {
+
 	struct DeadCodeRemoval : public FunctionPass {
 		static char ID; // Pass identification, replacement for typeid
 		DeadCodeRemoval() : FunctionPass(ID) {}
@@ -26,7 +28,7 @@ namespace {
 			
 			recursiveVisit(entryBlock, visitedNodes);
 			
-			errs() << visitedNodes.size() << "\n" ;
+			//errs() << visitedNodes.size() << "\n" ;
 			
 			for (Function::iterator BBiter = F.begin(); BBiter != F.end(); ++BBiter) {
 				if ( visitedNodes.find((BasicBlock*)BBiter) == visitedNodes.end() ) {
@@ -35,8 +37,10 @@ namespace {
 				}
 			}
 			
+			DeadNodesRemoved = 0;
 			for(unsigned int i = 0; i<deadNodes.size(); i++){
 				deadNodes[i]->eraseFromParent();
+				DeadNodesRemoved++;
 			}
 			
 			return (deadNodes.size());
@@ -44,7 +48,7 @@ namespace {
 
 	        // We don't modify the program, so we preserve all analyses
 	        virtual void getAnalysisUsage(AnalysisUsage &AU) const {
-//			AU.addRequired<DominatorTree>();      
+			AU.addRequired<DominatorTree>();      
 			//AU.setPreservesAll();
 	        }
 	        
@@ -66,4 +70,4 @@ namespace {
 }
 
 char DeadCodeRemoval::ID = 0;
-INITIALIZE_PASS(DeadCodeRemoval, "deadCodeRemoval", "Dead Code Removal pass", false, false);
+INITIALIZE_PASS(DeadCodeRemoval, "phase0-rmangal3-3", "Dead Code Removal pass", false, false);

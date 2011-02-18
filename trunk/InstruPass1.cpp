@@ -51,6 +51,6 @@ char InstruPass1::ID = 0;
 //static RegisterPass<InstruPass1> X("instruPass1", "InstruPass1", false, false);
 
 
-INITIALIZE_PASS(InstruPass1, "instruPass1",
+INITIALIZE_PASS(InstruPass1, "phase0-rmangal3-1",
                 "Instrumentation pass 1 using callgraph",
                 false, false);	
