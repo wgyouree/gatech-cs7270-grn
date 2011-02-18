@@ -21,18 +21,25 @@ namespace {
 		virtual bool runOnFunction(Function &F) {
 			// remove dead code
 			std::set<BasicBlock*> visitedNodes;
+			std::vector<BasicBlock*> deadNodes;
 			BasicBlock &entryBlock = F.getEntryBlock();
 			
 			recursiveVisit(entryBlock, visitedNodes);
 			
+			errs() << visitedNodes.size() << "\n" ;
+			
 			for (Function::iterator BBiter = F.begin(); BBiter != F.end(); ++BBiter) {
 				if ( visitedNodes.find((BasicBlock*)BBiter) == visitedNodes.end() ) {
-					BBiter->removeFromParent();
+					BasicBlock* temp = (BasicBlock*) BBiter;
+					deadNodes.push_back(temp);
 				}
 			}
 			
+			for(unsigned int i = 0; i<deadNodes.size(); i++){
+				deadNodes[i]->eraseFromParent();
+			}
 			
-			return false;
+			return (deadNodes.size());
 		}
 
 	        // We don't modify the program, so we preserve all analyses
