@@ -16,7 +16,7 @@ STATISTIC(BasicBlockMax, "Max number of basic blocks in a function.");
 STATISTIC(BasicBlockMin, "Min number of basic blocks in a function.");
 STATISTIC(BasicBlockAvg, "Avg number of basic blocks in a function.");
 
-STATISTIC(FunctionCounter, "Number of functions in the entire program.");
+STATISTIC(FunctionCounter, "Number of functions in the entire program excluding library functions.");
 
 STATISTIC(CFGEdgeMax, "Max number of CFG edges in a function.");
 STATISTIC(CFGEdgeMin, "Min number of CFG edges in a function.");
@@ -37,7 +37,7 @@ STATISTIC(LoopBlockAvg, "Avg number of single entry loop blocks in a function.")
 namespace {
 	struct InstruPass2 : public FunctionPass {
 		static char ID; // Pass identification, replacement for typeid
-		static unsigned int DomOutCum,DomInCum, BasicBlockCum, CFGEdgeCum;
+		static unsigned int DomOutCum,DomInCum, BasicBlockCum, CFGEdgeCum, LoopCum, LoopBlockCum;
 		
 		InstruPass2() : FunctionPass(ID) {		
 		}
@@ -103,11 +103,15 @@ namespace {
 
 			LoopMax = (localLoopCounter > LoopMax) ? localLoopCounter : LoopMax;
 			LoopMin = (localLoopCounter < LoopMin) ? localLoopCounter : LoopMin;
-			LoopAvg = ((FunctionCounter - 1)*LoopAvg + localLoopCounter) / FunctionCounter;
+			LoopCum += localLoopCounter;
+			LoopAvg = LoopCum / FunctionCounter;
+			//LoopAvg = ((FunctionCounter - 1)*LoopAvg + localLoopCounter) / FunctionCounter;
 			
 			LoopBlockMax = (localLoopBlockCounter > LoopBlockMax) ? localLoopBlockCounter : LoopBlockMax;
 			LoopBlockMin = (localLoopBlockCounter < LoopBlockMin) ? localLoopBlockCounter : LoopBlockMin;
-			LoopBlockAvg = ((FunctionCounter - 1)*LoopBlockAvg + localLoopBlockCounter) / FunctionCounter;
+			LoopBlockCum += localLoopBlockCounter;
+			LoopBlockAvg = LoopBlockCum / FunctionCounter;
+			//LoopBlockAvg = ((FunctionCounter - 1)*LoopBlockAvg + localLoopBlockCounter) / FunctionCounter;
 			
 			return false;
 		}
@@ -166,4 +170,6 @@ unsigned int InstruPass2::DomOutCum = 0;
 unsigned int InstruPass2::DomInCum = 0;
 unsigned int InstruPass2::BasicBlockCum = 0;
 unsigned int InstruPass2::CFGEdgeCum = 0;
+unsigned int InstruPass2::LoopCum = 0;
+unsigned int InstruPass2::LoopBlockCum = 0;
 INITIALIZE_PASS(InstruPass2, "instruPass2", "Instrumentation Pass 2 using CFG", false, false);

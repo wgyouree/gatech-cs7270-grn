@@ -9,7 +9,7 @@
 
 using namespace llvm;
 
-STATISTIC(FunctionCounter, "Number of functions");
+STATISTIC(FunctionCounter, "Number of functions including library functions");
 
 STATISTIC(EdgeCounter, "Number of Call Graph edges");
 
@@ -24,7 +24,7 @@ namespace {
 	//CG.print(errs(),&M);
 
      for(df_iterator<CallGraph*> CG_iterB = df_begin<CallGraph*>(&CG), CG_iterE = df_end<CallGraph*>(&CG); CG_iterB != CG_iterE; ++CG_iterB){
-      	if ((*CG_iterB)->getFunction()){
+      	if ((*CG_iterB)->getFunction() /*&& ((*CG_iterB)->getFunction()->isDeclaration() && (*CG_iterB)->getFunction()->isIntrinsic())*/){
       		FunctionCounter++;
       		EdgeCounter = EdgeCounter + (*CG_iterB)->size();
       	}else{
@@ -39,7 +39,7 @@ namespace {
 
     // We don't modify the program, so we preserve all analyses
     virtual void getAnalysisUsage(AnalysisUsage &AU) const {
-	AU.addRequired<CallGraph>();      
+	AU.addRequired<CallGraph>(); 
 	AU.setPreservesAll();
     }
     
