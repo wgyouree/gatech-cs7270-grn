@@ -110,9 +110,9 @@ namespace {
 					TerminatorInst *termInst = newBlock->getTerminator();
 					//BasicBlock *otherBlock = termInst->getSuccessor(0);
 					BasicBlock *otherBlock = BasicBlock::Create(F.getContext(), Twine("exitBlock"), &F);
-					//Value *one = ConstantInt::get(Type::getInt32Ty(F.getContext()),1);
-					//CallInst *exitCall = CallInst::Create(f, one, "exitCall", otherBlock);
-					errs() << otherBlock->getName() << "\n";
+					Value *one = ConstantInt::get(Type::getInt32Ty(F.getContext()),1);
+					CallInst *exitCall = CallInst::Create(f, one, "", otherBlock);
+					new UnwindInst(F.getContext(), otherBlock);
 
 					//TerminatorInst *termInstc = currBlock->getTerminator();
 					//errs() << *termInstc << "\n";
@@ -149,4 +149,3 @@ namespace {
 	char ABCPass::ID = 0;
 	RegisterPass<ABCPass> X("abc", "Array Bounds Checking");
 }
-
