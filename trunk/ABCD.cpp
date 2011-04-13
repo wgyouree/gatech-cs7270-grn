@@ -50,10 +50,9 @@ namespace {
 		}
 
 		virtual bool runOnFunction(Function &F) {
-			//for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
-			//	errs() << *I << "\n";
-			//}
-			std::list<Instruction *> arrayAccessInstList;// = new std::list<Instruction *>();
+			std::list<Instruction *> arrayAccessInstList;
+			bool exitBlockCreated = false;
+			BasicBlock *otherBlock;
 			for (Function::iterator BI = F.begin(); BI != F.end(); ++BI){
 				for (BasicBlock::iterator II = (*BI).begin(); II != (*BI).end(); ++II)
 					if (isa<PHINode>(*II))
@@ -102,13 +101,13 @@ namespace {
 
 				TerminatorInst *termInst = newBlock->getTerminator();
 				//BasicBlock *otherBlock = termInst->getSuccessor(0);
-				BasicBlock *otherBlock = BasicBlock::Create(F.getContext(), Twine("exitBlock"), &F);
-				Value *one = ConstantInt::get(Type::getInt32Ty(F.getContext()),1);
-				CallInst *exitCall = CallInst::Create(f, one, "", otherBlock);
-				new UnwindInst(F.getContext(), otherBlock);
-
-				//TerminatorInst *termInstc = currBlock->getTerminator();
-				//errs() << *termInstc << "\n";
+				if (!exitBlockCreated){
+					exitBlockCreated = true;
+					otherBlock = BasicBlock::Create(F.getContext(), Twine("exitBlock"), &F);
+					Value *one = ConstantInt::get(Type::getInt32Ty(F.getContext()),1);
+					CallInst *exitCall = CallInst::Create(f, one, "", otherBlock);
+					new UnwindInst(F.getContext(), otherBlock);
+				}
 
 				BranchInst *branchInst = BranchInst::Create(newBlock, otherBlock, cmpinst);
 
