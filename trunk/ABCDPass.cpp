@@ -42,9 +42,20 @@ namespace {
 			return true;
 		}
 
-		virtual bool demandProve(ABCDGraph* graph, ABCDCheck* check) {
+		virtual bool demandProve ( ABCDGraph* graph, ABCDCheck* check ) {
 			bool result = false;
 
+			
+
+			return result;
+		}
+
+		/**
+		 * Returns 1 for True, 0 for Reduced, or -1 for False
+		 */
+		virtual int prove ( ABCDNode* a, ABCDNode* v, int c ) {
+			int result = 0;
+			
 			
 
 			return result;
