@@ -8,6 +8,8 @@ class ABCDNode;
 class ABCDVariable;
 class ABCDEdge;
 class PhiFunction;
+class ABCDGraph;
+class ABCDCheck;
 
 class ABCDVariable {
 
@@ -68,6 +70,30 @@ class PhiFunction {
 		void addVariable ( ABCDVariable* variable );
 		vector<ABCDVariable*> getVariables();
 
+};
+
+class ABCDGraph {
+	
+	private:
+		ABCDNode* rootNode;
+
+	public:
+		ABCDGraph ( ABCDNode* root );
+		ABCDNode* getRootNode();
+};
+
+class ABCDCheck {
+
+	private:
+		ABCDNode* source;
+		ABCDNode* target;
+		int value;
+
+	public:
+		ABCDCheck ( ABCDNode* source, ABCDNode* target, int value );
+		ABCDNode* getSource();
+		ABCDNode* getTarget();
+		int getValue();
 };
 
 
@@ -168,4 +194,31 @@ void PhiFunction::addVariable ( ABCDVariable* variable ) {
 
 vector<ABCDVariable*> PhiFunction::getVariables() {
 	return this->variables;
+}
+
+
+ABCDGraph::ABCDGraph ( ABCDNode *rootNode ) {
+	this->rootNode = rootNode;
+}
+
+ABCDNode* ABCDGraph::getRootNode() {
+	return this->rootNode;
+}
+
+ABCDCheck::ABCDCheck ( ABCDNode* source, ABCDNode* target, int value ) {
+	this->source = source;
+	this->target = target;
+	this->value = value;
+}
+
+ABCDNode* ABCDCheck::getSource() {
+	return this->source;
+}
+
+ABCDNode* ABCDCheck::getTarget() {
+	return this->target;
+}
+
+int ABCDCheck::getValue() {
+	return this->value;
 }
