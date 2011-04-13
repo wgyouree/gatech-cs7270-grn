@@ -34,11 +34,22 @@ namespace {
 
 		virtual bool doInitialization(Module &M){
 
+			return true;
 		}
 
 		virtual bool runOnFunction(Function &F) {
 
+			return true;
 		}
+
+		virtual bool demandProve(ABCDGraph* graph, ABCDCheck* check) {
+			bool result = false;
+
+			
+
+			return result;
+		}
+
 	};
 
 	char ABCDPass::ID = 0;
