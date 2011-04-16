@@ -150,23 +150,26 @@ namespace {
 					if (curBB->getName().equals(*exitBBName))
 						continue;
 					for (int j = 0; j < 2; j++){
-						if (isa<Constant>(*operands[i]))
+						if (isa<Constant>(*operands[j]))
+							continue;
+						if (!isa<LoadInst>(*operands[j]))
 							continue;
 						if(!newPIBlock){
 							newPIBlock = BasicBlock::Create(F.getContext(), Twine(PIBLOCKNAME), &F, curBB);
 							curBR->setSuccessor(i, newPIBlock);
 						}
-						opType = operands[i]->getType();
+						opType = operands[j]->getType();
 						std::vector<const Type *> params = std::vector<const Type *>();
 						params.push_back(opType);
 						FunctionType *fType = FunctionType::get(opType, params, false);
 						sprintf(piFuncName, "%s%d", PIFUNCNAME, opType->getTypeID());
 						Function *temp = (Function *)(m->getOrInsertFunction(piFuncName, fType));
 
-						CallInst *piCall = CallInst::Create(temp, operands[i], "", newPIBlock);
-						StoreInst *stInst = new StoreInst((Value *)piCall, operands[i], newPIBlock);
+						CallInst *piCall = CallInst::Create(temp, operands[j], "", newPIBlock);
+						StoreInst *stInst = new StoreInst((Value *)piCall, ((LoadInst *)operands[j])->getOperand(0), newPIBlock);
 					}
-					BranchInst::Create(curBB, newPIBlock);
+					if (newPIBlock)
+						BranchInst::Create(curBB, newPIBlock);
 				}
 			}
 
