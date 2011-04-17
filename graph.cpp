@@ -13,11 +13,15 @@ struct ABCDEdge_{
 
 struct ABCDNode_{
 	Value *value;
+   int length; // 0 => not an array length node.
 	std::vector<ABCDEdge* > inList;
 	std::vector<ABCDEdge* > outList;
 };
 
-std::vector<ABCDNode* > graph;
+typedef struct{
+	std::vector<ABCDNode* > arrayLengthList;
+   std::vector<ABCDNode* > variableList;
+}ABCDGraph;
 
 //So the graph is essentially just a list(vector) of nodes.
 
@@ -27,8 +31,11 @@ std::vector<ABCDNode* > graph;
 As the name suggests, get the node if already present in the list,
 (search on the Value*) or create a node with empty edge lists and 
 the given value and return it.
+
+If value isa<AllocaInst> insert into arrayLengthList with the input length,
+else in the variableList.
 */
-ABCDNode *getOrInsertNode(Value *value);
+ABCDNode *getOrInsertNode(ABCDGraph *graph, Value *value, int length);
 
 /*
 Create two edges - out edge for n1 and in edge for n2.
