@@ -41,7 +41,10 @@ namespace {
 						int NumElements = ((const ArrayType *)ai->getAllocatedType())->getNumElements();
 						getOrInsertNode(inequalityGraph, (Value *)ai, NumElements);
 					}
-				} else if (isa<PHINode>(*I)){
+				}
+			}
+			for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I){
+				if (isa<PHINode>(*I)){
 					PHINode *phi = (PHINode *)(&*I);
 					Graph::ABCDNode *res = getOrInsertNode(inequalityGraph, (Value *)phi, 0);
 					std::map<Value*, Graph::ABCDNode* > *arrayLengthPtr = &(inequalityGraph->arrayLengthList);
