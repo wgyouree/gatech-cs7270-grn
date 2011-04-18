@@ -21,48 +21,52 @@
 #include <vector>
 #include <list>
 #include "llvm/ADT/Twine.h"
+#include "graph.cpp"
 
 using namespace llvm;
 
 namespace {
 
-	struct ABCDPass : public FunctionPass {
-
+	struct ABCDPass : public FunctionPass{
 		static char ID;
-		Function *f;
-		ABCPass() : FunctionPass(ID) {}
 
-		virtual bool doInitialization(Module &M){
+		ABCDPass() : FunctionPass(ID) {}
 
+		virtual bool runOnFunction(Function &F){
+			Graph::ABCDGraph *inequalityGraph = new Graph::ABCDGraph();
+			for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I){
+				if(isa<AllocaInst>(*I)){
+					AllocaInst *ai = (AllocaInst *)&*I;
+					if (ai->getAllocatedType()->isArrayTy()){
+						int NumElements = ((const ArrayType *)ai->getAllocatedType())->getNumElements();
+						getOrInsertNode(inequalityGraph, (Value *)ai, NumElements);
+					}
+				} else if (isa<PHINode>(*I)){
+					PHINode *phi = (PHINode *)(&*I);
+					Graph::ABCDNode *res = getOrInsertNode(inequalityGraph, (Value *)phi, 0);
+					std::map<Value*, Graph::ABCDNode* > *arrayLengthPtr = &(inequalityGraph->arrayLengthList);
+					for (int i = 0, total = phi->getNumIncomingValues(); i < total; i++){
+						Value *inVal = phi->getIncomingValue(i);
+						if (isa<Constant>(*inVal)){
+							if (!isa<ConstantInt>(*inVal))
+								continue;
+							ConstantInt *cons = (ConstantInt *)inVal;
+							for (std::map<Value*, Graph::ABCDNode* >::iterator AI = (*arrayLengthPtr).begin(),
+							   AE = (*arrayLengthPtr).end(); AI != AE; ++AI){
+//								//weight of the edge = cons - arraylength
+								insertEdge((*AI).second, res, cons->getSExtValue() - (*AI).second->length);
+							}
+							continue;
+						}
+						Graph::ABCDNode *in = getOrInsertNode(inequalityGraph, inVal, 0);
+						insertEdge(in, res, 0);
+					}
+				}
+			}
 			return true;
 		}
-
-		virtual bool runOnFunction(Function &F) {
-
-			return true;
-		}
-
-		virtual bool demandProve ( ABCDGraph* graph, ABCDCheck* check ) {
-			bool result = false;
-
-			
-
-			return result;
-		}
-
-		/**
-		 * Returns 1 for True, 0 for Reduced, or -1 for False
-		 */
-		virtual int prove ( ABCDNode* a, ABCDNode* v, int c ) {
-			int result = 0;
-			
-			
-
-			return result;
-		}
-
 	};
 
 	char ABCDPass::ID = 0;
-	RegisterPass<ABCPass> X("abcd", "Array Bounds Checking Dynamically");
+	RegisterPass<ABCDPass> X("abcd", "Redundant Check Elimination");
 }
