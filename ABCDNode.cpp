@@ -10,6 +10,7 @@ class ABCDEdge;
 class PhiFunction;
 class ABCDGraph;
 class ABCDCheck;
+class ABCDMap;
 
 class ABCDVariable {
 
@@ -95,6 +96,13 @@ class ABCDCheck {
 		ABCDNode* getTarget();
 		int getValue();
 };
+
+class ABCDMap {
+
+	private:
+			
+	
+}
 
 
 

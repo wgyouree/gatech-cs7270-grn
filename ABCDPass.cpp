@@ -85,6 +85,39 @@ namespace Graph{
 		if (it == n2->inList.end())
 			n2->inList.insert(NodeIntPair(n1, weight));
 	}
+
+	typedef struct {
+		ABCDNode *source;
+		ABCDNode *target;
+	} ABCDCheck;
+
+	typedef struct {
+		std::map<ABCDCheck *, int value> valueMap;
+	} C;
+
+	typedef struct {
+		std::map<ABCDNode *, int value> valueMap;
+	} active;
+
+	C* createC() {
+		return new C();
+	}
+
+	active* createActive() {
+		return new active();
+	}
+
+	void addABCDCheck(C* c, ABCDCheck *check, int value) {
+		c->valueMap.insert(std::pair<ABCDCheck *, int>(check, value));
+	}
+
+	std::map<ABCDCheck *, int>::iterator getValue(C *c, ABCDCheck *check) {
+		std::map<ABCDCheck *, int>::iterator result = c->valueMap.find(check);
+		if ( result != c->valueMap.end() ) {
+			return result;
+		}
+		return NULL;
+	}
 }
 
 namespace {
@@ -93,6 +126,31 @@ namespace {
 		static char ID;
 
 		ABCDPass() : FunctionPass(ID) {}
+
+		virtual bool demandProve(Graph::ABCDGraph *graph, Graph::ABCDNode *index, Graph::ABCDNode *arrayLength) {
+			Graph::active *active = new Graph::active();
+			Graph::C *C = new Graph::C();
+			int c = -1;
+
+			if ( prove ( graph, active, C, index, arrayLength, c ) >= 0 ) {
+				return true;
+			}
+			return false;
+		}
+
+		// use ABCD algorithm to prove redundancy
+		virtual int prove(Graph::ABCDGraph *graph, Graph::active *active, Graph::C *C, Graph::ABCDNode *a, Graph::ABCDNode *v, int c) {
+			
+			
+
+			return -1;
+		}
+
+		// calculate shortest distance between source and target
+		virtual int distance(Graph::ABCDGraph *graph, Graph::ABCDNode *source, Graph::ABCDNode *target) {
+			
+			return 0;
+		}
 
 		virtual bool runOnFunction(Function &F){
 			char *EXITNAME = "exitBlock";
@@ -286,6 +344,11 @@ namespace {
 					}
 				}
 			}
+
+			
+
+			
+
 			return true;
 		}
 	};
