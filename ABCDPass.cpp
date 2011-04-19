@@ -20,6 +20,7 @@
 #include <set>
 #include <vector>
 #include <list>
+#include <iostream>
 #include "llvm/ADT/Twine.h"
 //#include "llvm/Transforms/Utils/ABCDGraph.h"
 
@@ -103,11 +104,11 @@ namespace Graph{
 	}
 
 	typedef struct {
-		std::map<ABCDCheck *, int> *valueMap;
+		std::map<ABCDCheck *, int> valueMap;
 	} C;
 
 	typedef struct {
-		std::map<ABCDNode *, int> *valueMap;
+		std::map<ABCDNode *, int> valueMap;
 	} active;
 
 	C* createC() {
@@ -119,21 +120,21 @@ namespace Graph{
 	}
 
 	void addABCDCheck(C* C, ABCDCheck *check, int value) {
-		C->valueMap->insert(std::pair<ABCDCheck *, int>(check, value));
+		C->valueMap.insert(std::pair<ABCDCheck *, int>(check, value));
 	}
 
 	ABCDCheck *getOrCreateABCDCheck(C* C, ABCDNode *u, ABCDNode *v, int value, int c) {
 		ABCDCheck *check = createABCDCheck(u,v,value);
-		if ( C->valueMap->find(check) == C->valueMap->end() ) {
-			C->valueMap->insert(std::pair<ABCDCheck *, int>(check,c));
+		if ( C->valueMap.find(check) == C->valueMap.end() ) {
+			C->valueMap.insert(std::pair<ABCDCheck *, int>(check,c));
 		}
 		return check;
 	}
 
 	int getValue(C *c, ABCDCheck *check) {
-		std::map<ABCDCheck *, int>::iterator result = c->valueMap->find(check);
-		if ( result != c->valueMap->end() ) {
-			return result->second->value;
+		std::map<ABCDCheck *, int>::iterator result = c->valueMap.find(check);
+		if ( result != c->valueMap.end() ) {
+			return result->second;
 		}
 		return -1;
 	}
@@ -177,18 +178,18 @@ namespace {
 		// -1 is False
 		virtual int prove(Graph::ABCDGraph *graph, Graph::active *active, Graph::C *C, Graph::ABCDNode *a, Graph::ABCDNode *v, int c) {
 			
-			Graph::ABCDCheck *check = Graph::createABCDCheck(a, v);
+			Graph::ABCDCheck *check = Graph::createABCDCheck(a, v, -1);
 
 			// same or stronger difference was already proven
-			if ( C->valueMap->find(check) == 1 ) {
+			if ( C->valueMap.find(check) == 1 ) {
 				return 1;
 			}
 			// same or weaker difference was already proven
-			else if ( C->valueMap->find(check) == -1 ) {
+			else if ( C->valueMap.find(check) == -1 ) {
 				return -1;
 			}
 			// v is on a cycle that was reduced for same or stronger difference
-			else if ( C->valueMap->find(check) == 0 ) {
+			else if ( C->valueMap.find(check) == 0 ) {
 				return 0;
 			}
 
@@ -203,7 +204,7 @@ namespace {
 			}
 
 			// a cycle was encountered
-			if ( active->valueMap->find(v) != NULL ) {
+			if ( active->valueMap.find(v) != NULL ) {
 				if ( c > active->valueMap.find(v)->second ) {
 					return -1; // an amplifying cycle
 				}
@@ -221,46 +222,46 @@ namespace {
 				// iterator over all outgoing edges, we are going to compare i and j vertices				
 				std::map<Graph::ABCDNode * , int > outList = i->second->outList;
 				Graph::ABCDNode *u = i->second;
-				for ( std::map<Graph::ABCDNode *, int >::iterator j = outList->begin(); j != outList.end(); j++ ) {
+				for ( std::map<Graph::ABCDNode *, int >::iterator j = outList.begin(); j != outList.end(); j++ ) {
 					Graph::ABCDNode *v = j->first;				
 					int value = j->second;
-					edges->push_back(Graph::createABCDEdge(u,v,value));
+					edges.push_back(Graph::createABCDEdge(u,v,value));
 				}
 			}
 
 			// TODO: finish recursive part of algorithm using set V_phi
 			// if v in V_phi
-				for ( std::vector<Graph::ABCDEdge *>::iterator i = edges->begin(); i != edges->end(); i++ ) {
-					Graph::ABCDEdge *e = i->first;
+				for ( std::vector<Graph::ABCDEdge *>::iterator i = edges.begin(); i != edges.end(); i++ ) {
+					Graph::ABCDEdge *e = *i;
 					Graph::ABCDNode *u = e->source;
 					Graph::ABCDNode *v = e->target;
 					int value = e->weight;
 					int d = distance(graph,u,v);
-					Graph::ABCDCheck *check = Graph::getOrCreateABCDCheck(C,u,v,c);
+					Graph::ABCDCheck *check = Graph::getOrCreateABCDCheck(C,u,v,-1,c);
 					int prove_result = prove(graph, active, C, a, v, c - d);
 
 					// replace existing entry
 					C->valueMap.erase(check);
 					// intersection
 					if ( check->value == 1 && prove_result == 1 ) {
-						C->valueMap.insert(std::pair<Graph::ABCDCheck *, int value>(check, prove_result));
+						C->valueMap.insert(std::pair<Graph::ABCDCheck *, int>(check, prove_result));
 					}
 				}
 			// else
-				for ( std::vector<Graph::ABCDEdge *>::iterator i = edges->begin(); i != edges->end(); i++ ) {
-					Graph::ABCDEdge *e = i->first;
+				for ( std::vector<Graph::ABCDEdge *>::iterator i = edges.begin(); i != edges.end(); i++ ) {
+					Graph::ABCDEdge *e = *i;
 					Graph::ABCDNode *u = e->source;
 					Graph::ABCDNode *v = e->target;
 					int value = e->weight;
 					int d = distance(graph,u,v);
-					Graph::ABCDCheck *check = C->valueMap.getOrCreateABCDCheck(u,v,c);
+					Graph::ABCDCheck *check = C->valueMap.getOrCreateABCDCheck(u,v,-1,c);
 					int prove_result = prove(graph, active, C, a, v, c - d);
 
 					// replace existing entry
 					C->valueMap.erase(check);
 					// union
 					if ( check->value == 1 || prove_result == 1 ) {
-						C->valueMap.insert(std::pair<Graph::ABCDCheck *, int value>(check, prove_result));
+						C->valueMap.insert(std::pair<Graph::ABCDCheck *, int>(check, prove_result));
 					}
 				}
 			
@@ -275,7 +276,7 @@ namespace {
 		virtual int distance(Graph::ABCDGraph *graph, Graph::ABCDNode *source, Graph::ABCDNode *target) {
 			
 			// create map to store edges for Step 3
-			std::vector<Graph::ABCDEdge *> *edges;
+			std::vector<Graph::ABCDEdge *> edges;
 			
 			// get reference to vertex set
 			std::map<Value *, Graph::ABCDNode *> *vertices = &(graph->variableList);
@@ -299,24 +300,25 @@ namespace {
 				std::map<Graph::ABCDNode * , int > outList = i->second->outList;
 				Graph::ABCDNode *u = i->second;
 				for ( std::map<Graph::ABCDNode *, int >::iterator j = outList.begin(); j != outList.end(); j++ ) {
-					Graph::ABCDNode *v = j->first;				
+					Graph::ABCDNode *v = j->first;		
 					int value = j->second;
 					if ( u->distance + value < v->distance ) {
 						v->distance = u->distance + value;
 						v->predecessor = u;
 					}
 					// create temporary set of edges for Step 3
-					edges->push_back(Graph::createABCDEdge(u,v,value));
+					edges.push_back(Graph::createABCDEdge(u,v,value));
 				}
 			}
 			
 			// Step 3: check for negative-weight cycles
-			for ( std::vector<Graph::ABCDEdge*>::iterator i = edges->begin(); i != edges.end(); i++ ) {
-				Graph::ABCDNode *u = i->first->source;
-				Graph::ABCDNode *v = i->first->target;
+			for ( std::vector<Graph::ABCDEdge*>::iterator i = edges.begin(); i != edges.end(); i++ ) {
+				Graph::ABCDEdge *e = *i;
+				Graph::ABCDNode *u = e->source;
+				Graph::ABCDNode *v = e->target;
 				int value = i->first->weight;
 				if ( u->distance + value < v->distance ) {
-					cerr << "Error, Graph contains a negative-weight cycle";
+					std::cerr << "Error, Graph contains a negative-weight cycle";
 				}
 			}
 
