@@ -32,6 +32,8 @@ namespace Graph{
 		int length; // 0 => not an array length node.
 		std::map<struct ABCDNode_* , int> inList;
 		std::map<struct ABCDNode_* , int > outList;
+		int distance;
+		ABCDNode_ *predecessor;
 	};
 	typedef struct ABCDNode_ ABCDNode;
 
@@ -89,12 +91,14 @@ namespace Graph{
 	typedef struct {
 		ABCDNode *source;
 		ABCDNode *target;
+		int value;
 	} ABCDCheck;
 
-	ABCDCheck *createABCDCheck(ABCDNode *source, ABCDNode *target) {
+	ABCDCheck *createABCDCheck(ABCDNode *source, ABCDNode *target, int value) {
 		ABCDCheck *check = new ABCDCheck();
 		check->source = source;
 		check->target = target;
+		check->value = value;
 		return check;
 	}
 
@@ -114,8 +118,16 @@ namespace Graph{
 		return new active();
 	}
 
-	void addABCDCheck(C* c, ABCDCheck *check, int value) {
-		c->valueMap.insert(std::pair<ABCDCheck *, int>(check, value));
+	void addABCDCheck(C* C, ABCDCheck *check, int value) {
+		C->valueMap.insert(std::pair<ABCDCheck *, int>(check, value));
+	}
+
+	ABCDCheck *getOrCreateABCDCheck(C* C, ABCDNode *u, ABCDNode *v, int value, int c) {
+		ABCDCheck *check = createABCDCheck(u,v,value);
+		if ( C->valueMap.find(check) == NULL ) {
+			C->valueMap.insert(std::pair<ABCDCheck *, int>(check,c));
+		}
+		return check;
 	}
 
 	std::map<ABCDCheck *, int>::iterator getValue(C *c, ABCDCheck *check) {
@@ -124,6 +136,20 @@ namespace Graph{
 			return result;
 		}
 		return NULL;
+	}
+	
+	typedef struct {
+		ABCDNode *source;
+		ABCDNode *target;
+		int weight;
+	} ABCDEdge;
+
+	ABCDEdge *createABCDEdge(ABCDNode *source, ABCDNode *target, int weight) {
+		ABCDEdge *edge = new ABCDEdge();
+		edge->source = source;
+		edge->target = target;
+		edge->weight = weight;
+		return edge;
 	}
 }
 
@@ -186,9 +212,58 @@ namespace {
 				}
 			}
 
-			active->valueMap.insert(std::pair<ABCDNode *, int>(v, c);
+			active->valueMap.insert(std::pair<Graph::ABCDNode *, int>(v, c);
+			
+			// create set of edges for recursive part of algorithm
+			std::vector<Graph::ABCDEdge *> *edges;
+			std::map<Value *v, Graph::ABCDNode *> *vertices = graph->variableList;
+			for ( std::map<Value *, Graph::ABCDNode *>::iterator i = vertices->begin(); i != vertices->end(); i++ ) {
+				// iterator over all outgoing edges, we are going to compare i and j vertices				
+				std::map<Graph::ABCDNode * , int > outList = i->second()->outList;
+				Graph::ABCDNode *u = i->second();
+				for ( std::map<Graph::ABCDNode *, int >::iterator j = outList->begin(); j != outList.end(); j++ ) {
+					Graph::ABCDNode *v = j->first();				
+					int value = j->second();
+					edges->push_back(Graph::createABCDEdge(u,v,value));
+				}
+			}
 
-			// TODO: recursive part of algorithm
+			// TODO: finish recursive part of algorithm using set V_phi
+			// if v in V_phi
+				for ( std::vector<Graph::ABCDEdge *>::iterator i = edges->begin(); i != edges->end(); i++ ) {
+					Graph::ABCDEdge *e = i->first();
+					Graph::ABCDNode *u = e->source;
+					Graph::ABCDNode *v = e->target;
+					int value = e->weight;
+					int d = distance(graph,u,v);
+					Graph::ABCDCheck *check = Graph::getOrCreateABCDCheck(C,u,v,c);
+					int prove_result = prove(graph, active, C, a, v, c - d);
+
+					// replace existing entry
+					C->valueMap.erase(check);
+					// intersection
+					if ( check->value == 1 && prove_result == 1 ) {
+						C->valueMap.insert(std::pair<Graph::ABCDCheck *, int value>(check, prove_result));
+					}
+				}
+			// else
+				for ( std::vector<Graph::ABCDEdge *>::iterator i = edges->begin(); i != edges->end(); i++ ) {
+					Graph::ABCDEdge *e = i->first();
+					Graph::ABCDNode *u = e->source;
+					Graph::ABCDNode *v = e->target;
+					int value = e->weight;
+					int d = distance(graph,u,v);
+					Graph::ABCDCheck *check = C->getOrCreateABCDCheck(u,v,c);
+					int prove_result = prove(graph, active, C, a, v, c - d);
+
+					// replace existing entry
+					C->erase(check);
+					// union
+					if ( check->value == 1 || prove_result == 1 ) {
+						C->valueMap.insert(std::pair<Graph::ABCDCheck *, int value>(check, prove_result));
+					}
+				}
+			
 
 			active->valueMap.erase(v); // active[v] = NULL
 
@@ -196,11 +271,63 @@ namespace {
 		}
 
 		// calculate shortest distance between source and target
+		// uses Bellman-Ford algorithm - Assumes no negative cycles
 		virtual int distance(Graph::ABCDGraph *graph, Graph::ABCDNode *source, Graph::ABCDNode *target) {
 			
-			// TODO: implement shortest path calculation
+			// create map to store edges for Step 3
+			std::vector<Graph::ABCDEdge *> *edges;
+			
+			// get reference to vertex set
+			std::map<Value *, Graph::ABCDNode *> *vertices = graph->variableList;
+			
+			// Step 1: initialize Graph
+			for ( std::map<Value *v, Graph::ABCDNode *>::iterator i = vertices->begin(); i != vertices->end(); i++ ) {
+				Graph::ABCDNode *v = i->second();
+				if ( v == source ) {
+					v->distance = 0;
+				}
+				else {
+					// infinity
+					v->distance = 1000000000;
+				}
+				v->predecessor = NULL;
+			}
 
-			return 0;
+			// Step 2: relax edges repeatedly
+			for ( std::map<Value *, Graph::ABCDNode *>::iterator i = vertices->begin(); i != vertices->end(); i++ ) {
+				// iterator over all outgoing edges, we are going to compare i and j vertices				
+				std::map<Graph::ABCDNode * , int > outList = i->outList();
+				Graph::ABCDNode *u = i->second();
+				for ( std::map<Graph::ABCDNode *, int >::iterator j = outList->begin(); j != outList.end(); j++ ) {
+					Graph::ABCDNode *v = j->first();				
+					int value = j->second();
+					if ( u->distance + value < v->distance ) {
+						v->distance = u->distance + value;
+						v->predecessor = u;
+					}
+					// create temporary set of edges for Step 3
+					edges->push_back(Graph::createABCDEdge(u,v,value));
+				}
+			}
+			
+			// Step 3: check for negative-weight cycles
+			for ( std::vector<Graph::ABCDEdge*>::iterator i = edges->begin(); i != edges.end(); i++ ) {
+				Graph::ABCDNode *u = i->first()->source;
+				Graph::ABCDNode *V = i->first()->target;
+				int value = i->first()->weight;
+				if ( u->distance + value < v->distance ) {
+					cerr << "Error, Graph contains a negative-weight cycle";
+				}
+			}
+
+			// calculate distance between source and target
+			int result = 0;
+			Graph::ABCDNode *current = target;
+			while ( current != source ) {
+				result += current->distance;
+				current = current->predecessor;
+			}
+			return result;
 		}
 
 		virtual bool runOnFunction(Function &F){
@@ -234,7 +361,7 @@ namespace {
 							ConstantInt *cons = (ConstantInt *)inVal;
 							for (std::map<Value*, Graph::ABCDNode* >::iterator AI = (*arrayLengthPtr).begin(),
 							   AE = (*arrayLengthPtr).end(); AI != AE; ++AI){
-//								//weight of the edge = cons - arraylength
+								//weight of the edge = cons - arraylength
 								Graph::insertEdge((*AI).second, res, cons->getSExtValue() - (*AI).second->length);
 							}
 							continue;
