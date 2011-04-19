@@ -55,8 +55,7 @@ namespace {
 			std::list<Instruction *> arrayAccessInstList;
 			bool exitBlockCreated = false;
 			char *EXITNAME = "exitBlock";
-			char *PIBLOCKNAME = "piBlock";
-			char *PIFUNCNAME = "pifunction_";
+			char *CHECKINST = "abcdcmpinst";
 
 			BasicBlock *otherBlock;
 			for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
@@ -96,7 +95,7 @@ namespace {
 
 				BasicBlock *currBlock = inst->getParent();
 
-				ICmpInst *cmpinst = new ICmpInst(inst, ICmpInst::ICMP_SLT, value, upperbound);
+				ICmpInst *cmpinst = new ICmpInst(inst, ICmpInst::ICMP_SLT, value, upperbound, Twine(CHECKINST));
 
 				BasicBlock *newBlock = currBlock->splitBasicBlock(inst, "bounds");
 
@@ -115,63 +114,6 @@ namespace {
 				llvm::ReplaceInstWithInst(currBlock->getTerminator(), branchInst);
 			}
 			errs() << "Number of array accesses= " << arrayAccessInstList.size() << "\n";
-
-//			for (Function::iterator BI = F.begin(); BI != F.end(); ++BI){
-//				for (BasicBlock::iterator II = (*BI).begin(); II != (*BI).end(); ++II)
-//					if (isa<PHINode>(*II))
-//						errs() << "Found a phi node\n";
-//			}
-			/* Start inserting PI instructions */
-			std::list<BranchInst *> brList;
-			BasicBlock *curBB;
-			for (Function::iterator FI = F.begin(); FI != F.end(); ++FI){
-				curBB = &(*FI);
-				if (isa<BranchInst>(*(curBB->getTerminator()))){
-					BranchInst *temp = (BranchInst *)(curBB->getTerminator());
-					if (temp->isConditional())
-						brList.push_back(temp);
-				}
-			}
-
-			StringRef *exitBBName = new StringRef(EXITNAME);
-			for (std::list<BranchInst *>::iterator brIter = brList.begin(); brIter != brList.end(); ++brIter){
-				Value *operands[2];
-				BranchInst *curBR = *brIter;
-				CmpInst *cmp = (CmpInst *)(curBR->getCondition());
-				operands[0] = cmp->getOperand(0);
-				operands[1] = cmp->getOperand(1);
-
-				BasicBlock *newPIBlock;
-				const Type *opType;
-				char piFuncName[20];
-				for (int i=0; i < curBR->getNumSuccessors(); i++){
-					newPIBlock = NULL;
-					curBB = curBR->getSuccessor(i);
-					if (curBB->getName().equals(*exitBBName))
-						continue;
-					for (int j = 0; j < 2; j++){
-						if (isa<Constant>(*operands[j]))
-							continue;
-						if (!isa<LoadInst>(*operands[j]))
-							continue;
-						if(!newPIBlock){
-							newPIBlock = BasicBlock::Create(F.getContext(), Twine(PIBLOCKNAME), &F, curBB);
-							curBR->setSuccessor(i, newPIBlock);
-						}
-						opType = operands[j]->getType();
-						std::vector<const Type *> params = std::vector<const Type *>();
-						params.push_back(opType);
-						FunctionType *fType = FunctionType::get(opType, params, false);
-						sprintf(piFuncName, "%s%d", PIFUNCNAME, opType->getTypeID());
-						Function *temp = (Function *)(m->getOrInsertFunction(piFuncName, fType));
-
-						CallInst *piCall = CallInst::Create(temp, operands[j], "", newPIBlock);
-						StoreInst *stInst = new StoreInst((Value *)piCall, ((LoadInst *)operands[j])->getOperand(0), newPIBlock);
-					}
-					if (newPIBlock)
-						BranchInst::Create(curBB, newPIBlock);
-				}
-			}
 
 			return true;
 		}
