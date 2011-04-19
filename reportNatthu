@@ -1,14 +1,20 @@
-CS 6241: Project - phase 0
+CS6241: Compiler Optimizations
+``````````````````````````````
+Project - Phase 1
+`````````````````
 
-Implementation of sub-problems:
-(2) Finding average, min and max number of basic blocks inside a function.
-		The number of basic blocks inside a function were found out by iterating over the Function, one basic block at a time.
-(3) Finding average, min and max number of CFGEdges inside a function.
-		While iterating over the function, for each basic block, the number of CFG edges originating from that particular block were found out by getting the number of successors of the terminator instruction of that basic block.
-(6) Finding average number of dominators for a basic block.
-(7) Finding average number of basic blocks dominated by a basic block.
-		The Dominator Tree data structure was used for these computations. For every function, the recursive algorithm starts with its entry block and finds (6) in a depth first manner while (7) in a breadth first manner.
-		The basic idea for calculating number of basic blocks dominated (D) by a basic block (BB) is that, D(BB) = 1 + summation of D(BBC) over all the children BBC of B.
-		The first term implies every block dominates itself, while the second term comes from the transitive property of the domination relation.
-		
-		The  basic idea for calculating number dominators (D) for a basic block (BB) is that, D(BB) = 1 + D(parent(BB)).
+(1) Array bounds checks (upperbound) are introduced whenever we encounter a GetElementPtr instruction for a statically allocated array. The basic block contain
+ing the instruction is broken into 2 blocks, the GetElementPtr instruction being in the second half, and a compare instruction introduced in the first block fo
+llowed by a branch instruction, which is linked to an "exitBlock" in case the array bounds check fails. Program execution stops if control flow reaches the "ex
+itBlock". This is performed during compilation by invoking the pass using opt.
+
+(2) The built-in pass "gvn" performs global value numbering as well as partial redundancy elimination.
+
+(3)
+    a) Constructing e-SSA form: As stated in the paper, the first 3 types of constraints are taken care of in the normal SSA form. e-SSA incorporates the remai
+ning two constraints of the form - x < y and check A[x]. In our implementation, check A[x] is actually represented by a compare instruction. 
+    The idea behind inserting PI instructions is to create a new SSA variable, which in a way, stores information about which branches (and as a result of which, what inequalities exist) were taken along different control paths. In our implementation, at every compare instruction, we insert a new basic block before e
+ach of its successors. Inside these basic blocks we insert PI instructions for each value involved in the compare instruction. PI instruction is of the form -
+x = pifunction_<variableTypeID>(x);. This ensures a new SSA value is generated when 'mem2reg' pass is invoked.
+    
+    b) Constructing inequality graph:
