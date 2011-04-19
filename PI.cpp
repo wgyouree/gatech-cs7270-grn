@@ -84,6 +84,15 @@ namespace {
 						FunctionType *fType = FunctionType::get(opType, params, false);
 						sprintf(piFuncName, "%s%d", PIFUNCNAME, opType->getTypeID());
 						Function *temp = (Function *)(m->getOrInsertFunction(piFuncName, fType));
+                  
+            if((temp->getBasicBlockList()).size() == 0){
+							BasicBlock *returnBB = BasicBlock::Create(temp->getContext(), "return", temp);
+							BasicBlock *entryBB = BasicBlock::Create(temp->getContext(), "entry", temp, returnBB);
+							BranchInst *newBr = BranchInst::Create(returnBB,entryBB);
+						
+							Argument* arg = ((temp->arg_begin()));
+							ReturnInst *newRet = ReturnInst::Create(temp->getContext(),arg,returnBB);
+						}
 
 						CallInst *piCall = CallInst::Create(temp, operands[j], "", newPIBlock);
 						StoreInst *stInst = new StoreInst((Value *)piCall, ((LoadInst *)operands[j])->getOperand(0), newPIBlock);
