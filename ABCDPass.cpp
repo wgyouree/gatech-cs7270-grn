@@ -91,6 +91,13 @@ namespace Graph{
 		ABCDNode *target;
 	} ABCDCheck;
 
+	ABCDCheck *createABCDCheck(ABCDNode *source, ABCDNode *target) {
+		ABCDCheck *check = new ABCDCheck();
+		check->source = source;
+		check->target = target;
+		return check;
+	}
+
 	typedef struct {
 		std::map<ABCDCheck *, int value> valueMap;
 	} C;
@@ -139,16 +146,60 @@ namespace {
 		}
 
 		// use ABCD algorithm to prove redundancy
+		// 1 is True
+		// 0 is Reduced
+		// -1 is False
 		virtual int prove(Graph::ABCDGraph *graph, Graph::active *active, Graph::C *C, Graph::ABCDNode *a, Graph::ABCDNode *v, int c) {
 			
-			
+			Graph::ABCDCheck check = Graph::createABCDCheck(a, v);
 
-			return -1;
+			// same or stronger difference was already proven
+			if ( C->valueMap.find(check) == 1 ) {
+				return 1;
+			}
+			// same or weaker difference was already proven
+			else if ( C->valueMap.find(check) == -1 ) {
+				return -1;
+			}
+			// v is on a cycle that was reduced for same or stronger difference
+			else if ( C->valueMap.find(check) == 0 ) {
+				return 0;
+			}
+
+			// traversal reached the source vertex, success if a - a <= c
+			if ( v == a && c >= 0 ) {
+				return 1;
+			}
+
+			// if no constraint exist on the value of v, we fail
+			if ( v->inList.size() == 0 ) {
+				return -1;
+			}
+
+			// a cycle was encountered
+			if ( active->valueMap.find(v) != NULL ) {
+				if ( c > active->valueMap.find(v)->second ) {
+					return -1; // an amplifying cycle
+				}
+				else {
+					return 0; // a "harmless" cycle
+				}
+			}
+
+			active->valueMap.insert(std::pair<ABCDNode *, int>(v, c);
+
+			// TODO: recursive part of algorithm
+
+			active->valueMap.erase(v); // active[v] = NULL
+
+			return Graph::getValue(C, check); // return C[v - a <= c]
 		}
 
 		// calculate shortest distance between source and target
 		virtual int distance(Graph::ABCDGraph *graph, Graph::ABCDNode *source, Graph::ABCDNode *target) {
 			
+			// TODO: implement shortest path calculation
+
 			return 0;
 		}
 
