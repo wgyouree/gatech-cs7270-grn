@@ -95,8 +95,11 @@ namespace {
 		ABCDPass() : FunctionPass(ID) {}
 
 		virtual bool runOnFunction(Function &F){
+			char *EXITNAME = "exitBlock";
 			char *PIFUNCNAME = "pifunction_";
+			char *CHECKINST = "abcdcmpinst";
 			Graph::ABCDGraph *inequalityGraph = new Graph::ABCDGraph();
+			std::vector<Instruction *> arrayCheckInstList;
 			for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I){
 				if(isa<AllocaInst>(*I)){
 					AllocaInst *ai = (AllocaInst *)&*I;
@@ -104,6 +107,9 @@ namespace {
 						int NumElements = ((const ArrayType *)ai->getAllocatedType())->getNumElements();
 						Graph::getOrInsertNode(inequalityGraph, (Value *)ai, NumElements);
 					}
+				} else if (isa<ICmpInst>(*I)){
+					if ((*I).getName().startswith(StringRef(CHECKINST)))
+						arrayCheckInstList.push_back(&*I);
 				}
 			}
 			for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I){
@@ -252,9 +258,33 @@ namespace {
                     }
                 }
 			}
-			for (std::map<Value *, Graph::ABCDNode *>::iterator AI = inequalityGraph->variableList.begin(),
-					AE = inequalityGraph->variableList.end(); AI != AE; ++AI){
-				AI->first->dump();
+//			for (std::map<Value *, Graph::ABCDNode *>::iterator AI = inequalityGraph->variableList.begin(),
+//					AE = inequalityGraph->variableList.end(); AI != AE; ++AI){
+//				AI->first->dump();
+//			}
+			for (std::vector<Instruction* >::iterator CI = arrayCheckInstList.begin(),
+					CE = arrayCheckInstList.end(); CI != CE; ++CI){
+				User *checkInst = (User *)(*CI);
+				Graph::ABCDNode *source;
+				int length;
+				source = Graph::getOrInsertNode(inequalityGraph, checkInst->getOperand(0), 0);
+				length = cast<ConstantInt>(*(checkInst->getOperand(1))).getSExtValue();
+				for (std::map<Value *, Graph::ABCDNode* >::iterator ANI = inequalityGraph->arrayLengthList.begin(),
+						ANE = inequalityGraph->arrayLengthList.end(); ANI != ANE; ++ANI){
+					if (ANI->second->length == length){
+						if (true){//Graph::isRedundant(source, ANI->second)){
+							// delete the instruction and break.
+							BasicBlock *parent = (*CI)->getParent(), *nextBlock;
+							nextBlock = parent->getTerminator()->getSuccessor(1);
+							if (nextBlock->getName().equals(StringRef(EXITNAME)))
+								nextBlock = parent->getTerminator()->getSuccessor(0);
+							(*CI)->eraseFromParent();
+							BranchInst *unCondBrInst = BranchInst::Create(nextBlock);
+							llvm::ReplaceInstWithInst(parent->getTerminator(), unCondBrInst);
+							break;
+						}
+					}
+				}
 			}
 			return true;
 		}
