@@ -181,15 +181,16 @@ namespace {
 			Graph::ABCDCheck *check = Graph::createABCDCheck(a, v, -1);
 
 			// same or stronger difference was already proven
-			if ( C->valueMap.find(check) == 1 ) {
+			int result = C->valueMap.find(check)->second;
+			if ( result == 1 ) {
 				return 1;
 			}
 			// same or weaker difference was already proven
-			else if ( C->valueMap.find(check) == -1 ) {
+			else if ( result == -1 ) {
 				return -1;
 			}
 			// v is on a cycle that was reduced for same or stronger difference
-			else if ( C->valueMap.find(check) == 0 ) {
+			else if ( result == 0 ) {
 				return 0;
 			}
 
@@ -204,7 +205,7 @@ namespace {
 			}
 
 			// a cycle was encountered
-			if ( active->valueMap.find(v) != NULL ) {
+			if ( active->valueMap.find(v) != active->valueMap.end() ) {
 				if ( c > active->valueMap.find(v)->second ) {
 					return -1; // an amplifying cycle
 				}
@@ -216,9 +217,9 @@ namespace {
 			active->valueMap.insert(std::pair<Graph::ABCDNode *, int>(v, c) );
 			
 			// create set of edges for recursive part of algorithm
-			std::vector<Graph::ABCDEdge *> *edges;
-			std::map<Value *, Graph::ABCDNode *> *vertices = &(graph->variableList);
-			for ( std::map<Value *, Graph::ABCDNode *>::iterator i = vertices->begin(); i != vertices->end(); i++ ) {
+			std::vector<Graph::ABCDEdge *> edges;
+			std::map<Value *, Graph::ABCDNode *> vertices = graph->variableList;
+			for ( std::map<Value *, Graph::ABCDNode *>::iterator i = vertices.begin(); i != vertices.end(); i++ ) {
 				// iterator over all outgoing edges, we are going to compare i and j vertices				
 				std::map<Graph::ABCDNode * , int > outList = i->second->outList;
 				Graph::ABCDNode *u = i->second;
@@ -254,7 +255,7 @@ namespace {
 					Graph::ABCDNode *v = e->target;
 					int value = e->weight;
 					int d = distance(graph,u,v);
-					Graph::ABCDCheck *check = C->valueMap.getOrCreateABCDCheck(u,v,-1,c);
+					Graph::ABCDCheck *check = Graph::getOrCreateABCDCheck(C,u,v,-1,c);
 					int prove_result = prove(graph, active, C, a, v, c - d);
 
 					// replace existing entry
@@ -316,7 +317,7 @@ namespace {
 				Graph::ABCDEdge *e = *i;
 				Graph::ABCDNode *u = e->source;
 				Graph::ABCDNode *v = e->target;
-				int value = i->first->weight;
+				int value = e->weight;
 				if ( u->distance + value < v->distance ) {
 					std::cerr << "Error, Graph contains a negative-weight cycle";
 				}
