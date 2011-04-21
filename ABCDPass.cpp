@@ -232,8 +232,7 @@ namespace {
 				}
 			}
 
-			// TODO: finish recursive part of algorithm using set V_phi
-			// if v in V_phi
+			if ( v->isPhi == TRUE ) {
 				for ( std::vector<Graph::ABCDEdge *>::iterator i = edges.begin(); i != edges.end(); i++ ) {
 					Graph::ABCDEdge *e = *i;
 					Graph::ABCDNode *u = e->source;
@@ -250,7 +249,8 @@ namespace {
 						C->valueMap.insert(std::pair<Graph::ABCDCheck *, int>(check, prove_result));
 					}
 				}
-			// else
+			}
+			else {
 				for ( std::vector<Graph::ABCDEdge *>::iterator i = edges.begin(); i != edges.end(); i++ ) {
 					Graph::ABCDEdge *e = *i;
 					Graph::ABCDNode *u = e->source;
@@ -267,7 +267,7 @@ namespace {
 						C->valueMap.insert(std::pair<Graph::ABCDCheck *, int>(check, prove_result));
 					}
 				}
-			
+			}
 
 			active->valueMap.erase(v); // active[v] = NULL
 
