@@ -87,9 +87,15 @@ namespace {
 
 				if(value==NULL || NumElements==0)
 					continue;
+               
+         const IntegerType *intType;
+         if(value->getType()->isIntegerTy(64)){
+           intType = IntegerType::get(F.getContext(), 64);
+         }else{
+           intType = IntegerType::get(F.getContext(), 32);
+         }
 
-				const IntegerType *intType = IntegerType::get(F.getContext(), 32);
-				ConstantInt *consInt = ConstantInt::get(intType, NumElements);
+        ConstantInt *consInt = ConstantInt::get(intType, NumElements);
 				Constant *cons = cast<Constant>(consInt);
 				Value *upperbound = cast<Value>(cons);
 
