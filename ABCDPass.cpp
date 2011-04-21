@@ -34,6 +34,7 @@ namespace Graph{
 		std::map<struct ABCDNode_* , int> inList;
 		std::map<struct ABCDNode_* , int > outList;
 		int distance;
+		bool isPhi;
 		ABCDNode_ *predecessor;
 	};
 	typedef struct ABCDNode_ ABCDNode;
@@ -54,6 +55,7 @@ namespace Graph{
 		newNode = new ABCDNode();
 		newNode->value = value;
 		newNode->length = length;
+		newNode->isPhi = false;
 		return newNode;
 	}
 
@@ -355,6 +357,7 @@ namespace {
 				if (isa<PHINode>(*I)){
 					PHINode *phi = (PHINode *)(&*I);
 					Graph::ABCDNode *res = Graph::getOrInsertNode(inequalityGraph, (Value *)phi, 0);
+					res->isPhi = true;
 					std::map<Value*, Graph::ABCDNode* > *arrayLengthPtr = &(inequalityGraph->arrayLengthList);
 					for (int i = 0, total = phi->getNumIncomingValues(); i < total; i++){
 						Value *inVal = phi->getIncomingValue(i);
@@ -501,6 +504,7 @@ namespace {
 //					AE = inequalityGraph->variableList.end(); AI != AE; ++AI){
 //				AI->first->dump();
 //			}
+			std::vector<Instruction* > toDeleteList;
 			for (std::vector<Instruction* >::iterator CI = arrayCheckInstList.begin(),
 					CE = arrayCheckInstList.end(); CI != CE; ++CI){
 				User *checkInst = (User *)(*CI);
@@ -517,7 +521,8 @@ namespace {
 							nextBlock = parent->getTerminator()->getSuccessor(1);
 							if (nextBlock->getName().equals(StringRef(EXITNAME)))
 								nextBlock = parent->getTerminator()->getSuccessor(0);
-							(*CI)->eraseFromParent();
+							toDeleteList.push_back(*CI);
+							//(*CI)->eraseFromParent();
 							BranchInst *unCondBrInst = BranchInst::Create(nextBlock);
 							llvm::ReplaceInstWithInst(parent->getTerminator(), unCondBrInst);
 							break;
@@ -526,9 +531,11 @@ namespace {
 				}
 			}
 
-			
-
-			
+			while (!toDeleteList.empty()){
+				Instruction *cur = toDeleteList.back();
+				toDeleteList.pop_back();
+				cur->eraseFromParent();
+			}
 
 			return true;
 		}
