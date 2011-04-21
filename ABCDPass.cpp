@@ -500,10 +500,8 @@ namespace {
                     }
                 }
 			}
-//			for (std::map<Value *, Graph::ABCDNode *>::iterator AI = inequalityGraph->variableList.begin(),
-//					AE = inequalityGraph->variableList.end(); AI != AE; ++AI){
-//				AI->first->dump();
-//			}
+			
+			/* Delete redundant check instructions */
 			std::vector<Instruction* > toDeleteList;
 			for (std::vector<Instruction* >::iterator CI = arrayCheckInstList.begin(),
 					CE = arrayCheckInstList.end(); CI != CE; ++CI){
@@ -515,14 +513,13 @@ namespace {
 				for (std::map<Value *, Graph::ABCDNode* >::iterator ANI = inequalityGraph->arrayLengthList.begin(),
 						ANE = inequalityGraph->arrayLengthList.end(); ANI != ANE; ++ANI){
 					if (ANI->second->length == length){
-						if (true){//Graph::isRedundant(source, ANI->second)){
+						if (demandProve(inequalityGraph, source, ANI->second)){//Graph::isRedundant(source, ANI->second)){
 							// delete the instruction and break.
 							BasicBlock *parent = (*CI)->getParent(), *nextBlock;
 							nextBlock = parent->getTerminator()->getSuccessor(1);
 							if (nextBlock->getName().equals(StringRef(EXITNAME)))
 								nextBlock = parent->getTerminator()->getSuccessor(0);
 							toDeleteList.push_back(*CI);
-							//(*CI)->eraseFromParent();
 							BranchInst *unCondBrInst = BranchInst::Create(nextBlock);
 							llvm::ReplaceInstWithInst(parent->getTerminator(), unCondBrInst);
 							break;
@@ -530,7 +527,9 @@ namespace {
 					}
 				}
 			}
-
+			errs() << arrayCheckInstList.size() << "\n";
+			errs() << inequalityGraph->arrayLengthList.size() << "\n";
+			errs() << toDeleteList.size() << "\n";
 			while (!toDeleteList.empty()){
 				Instruction *cur = toDeleteList.back();
 				toDeleteList.pop_back();
