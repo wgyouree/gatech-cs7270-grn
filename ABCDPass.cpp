@@ -167,7 +167,7 @@ namespace {
 			Graph::C *C = new Graph::C();
 			int c = -1;
 
-			if ( prove ( graph, active, C, index, arrayLength, c ) >= 0 ) {
+			if ( prove ( graph, active, C, arrayLength, index, c ) >= 0 ) {
 				return true;
 			}
 			return false;
