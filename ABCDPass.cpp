@@ -174,6 +174,22 @@ namespace {
 			return false;
 		}
 
+		virtual void printContentsOfActive(Graph::active *active) {
+			errs() << "Active contains: " << active->valueMap.size() << " entries:\n";
+			for ( std::map<Graph::ABCDNode *, int>::iterator i = active->valueMap.begin(); i != active->valueMap.end(); i++ ) {
+				errs() << i->second << "\n";
+			}
+			errs() << "\n\n";
+		}
+
+		virtual void printContentsOfC(Graph::C *c) {
+			errs() << "C contains: " << c->valueMap.size() << " entries:\n";
+			for ( std::map<Graph::ABCDCheck *, int>::iterator i = c->valueMap.begin(); i != c->valueMap.end(); i++ ) {
+				errs() << i->second << "\n";
+			}
+			errs() << "\n\n";
+		}
+
 		// use ABCD algorithm to prove redundancy
 		// 1 is True
 		// 0 is Reduced
@@ -182,33 +198,38 @@ namespace {
 			
 			Graph::ABCDCheck *check = Graph::createABCDCheck(a, v, -1);
 
+			printContentsOfActive(active);
+			printContentsOfC(C);
+
 			// same or stronger difference was already proven
-			int result = C->valueMap.find(check)->second;
-			if ( result == 1 ) {
-				errs() << "same or stronger difference was already proven\n";
-				return 1;
-			}
-			// same or weaker difference was already proven
-			else if ( result == -1 ) {
-				errs() << "same or weaker difference was already proven\n";
-				return -1;
-			}
-			// v is on a cycle that was reduced for same or stronger difference
-			else if ( result == 0 ) {
-				errs() << "v is on a cycle that was reduced for same or stronger difference\n";
-				return 0;
-			}
+			if ( C->valueMap.find(check) != C->valueMap.end() ) {
+				int result = C->valueMap.find(check)->second;
+				if ( result == 1 ) {
+					errs() << "same or stronger difference was already proven\n";
+					return 1;
+				}
+				// same or weaker difference was already proven
+				else if ( result == -1 ) {
+					errs() << "same or weaker difference was already proven\n";
+					return -1;
+				}
+				// v is on a cycle that was reduced for same or stronger difference
+				else if ( result == 0 ) {
+					errs() << "v is on a cycle that was reduced for same or stronger difference\n";
+					return 0;
+				}
 
-			// traversal reached the source vertex, success if a - a <= c
-			if ( v == a && c >= 0 ) {
-				errs() << "traversal reached the source vertex, success if a - a <= c\n";
-				return 1;
-			}
+				// traversal reached the source vertex, success if a - a <= c
+				if ( v == a && c >= 0 ) {
+					errs() << "traversal reached the source vertex, success if a - a <= c\n";
+					return 1;
+				}
 
-			// if no constraint exist on the value of v, we fail
-			if ( v->inList.size() == 0 ) {
-				errs() << "if no constraint exist on the value of v, we fail\n";
-				return -1;
+				// if no constraint exist on the value of v, we fail
+				if ( v->inList.size() == 0 ) {
+					errs() << "if no constraint exist on the value of v, we fail\n";
+					return -1;
+				}
 			}
 
 			// a cycle was encountered
@@ -222,7 +243,8 @@ namespace {
 					return 0; // a "harmless" cycle
 				}
 			}
-
+			
+			errs() << "added a value to Active\n";
 			active->valueMap.insert(std::pair<Graph::ABCDNode *, int>(v, c) );
 			
 			// create set of edges for recursive part of algorithm
@@ -252,9 +274,13 @@ namespace {
 
 					// replace existing entry
 					C->valueMap.erase(check);
+					
 					// intersection
 					if ( check->value == 1 && prove_result == 1 ) {
 						C->valueMap.insert(std::pair<Graph::ABCDCheck *, int>(check, prove_result));
+					}
+					else {
+						C->valueMap.insert(std::pair<Graph::ABCDCheck *, int>(check, 0));
 					}
 				}
 			}
@@ -271,9 +297,13 @@ namespace {
 
 					// replace existing entry
 					C->valueMap.erase(check);
+					
 					// union
 					if ( check->value == 1 || prove_result == 1 ) {
 						C->valueMap.insert(std::pair<Graph::ABCDCheck *, int>(check, prove_result));
+					}
+					else {
+						C->valueMap.insert(std::pair<Graph::ABCDCheck *, int>(check, 0));
 					}
 				}
 			}
