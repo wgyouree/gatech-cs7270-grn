@@ -9,7 +9,6 @@
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Support/CFG.h"
 #include "llvm/ADT/StringExtras.h"
-//#include "llvm/Support/Streams.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/Statistic.h"
@@ -20,7 +19,6 @@
 #include <set>
 #include <vector>
 #include <list>
-#include <iostream>
 #include "llvm/ADT/Twine.h"
 //#include "llvm/Transforms/Utils/ABCDGraph.h"
 
@@ -164,6 +162,7 @@ namespace {
 		ABCDPass() : FunctionPass(ID) {}
 
 		virtual bool demandProve(Graph::ABCDGraph *graph, Graph::ABCDNode *index, Graph::ABCDNode *arrayLength) {
+			errs() << "Demand Prove Called\n";
 			Graph::active *active = new Graph::active();
 			Graph::C *C = new Graph::C();
 			int c = -1;
@@ -185,33 +184,40 @@ namespace {
 			// same or stronger difference was already proven
 			int result = C->valueMap.find(check)->second;
 			if ( result == 1 ) {
+				errs() << "same or stronger difference was already proven\n";
 				return 1;
 			}
 			// same or weaker difference was already proven
 			else if ( result == -1 ) {
+				errs() << "same or weaker difference was already proven\n";
 				return -1;
 			}
 			// v is on a cycle that was reduced for same or stronger difference
 			else if ( result == 0 ) {
+				errs() << "v is on a cycle that was reduced for same or stronger difference\n";
 				return 0;
 			}
 
 			// traversal reached the source vertex, success if a - a <= c
 			if ( v == a && c >= 0 ) {
+				errs() << "traversal reached the source vertex, success if a - a <= c\n";
 				return 1;
 			}
 
 			// if no constraint exist on the value of v, we fail
 			if ( v->inList.size() == 0 ) {
+				errs() << "if no constraint exist on the value of v, we fail\n";
 				return -1;
 			}
 
 			// a cycle was encountered
 			if ( active->valueMap.find(v) != active->valueMap.end() ) {
 				if ( c > active->valueMap.find(v)->second ) {
+					errs() << "an amplifying cycle\n";
 					return -1; // an amplifying cycle
 				}
 				else {
+					errs() << "a harmless cycle\n";
 					return 0; // a "harmless" cycle
 				}
 			}
@@ -232,7 +238,8 @@ namespace {
 				}
 			}
 
-			if ( v->isPhi == TRUE ) {
+			if ( v->isPhi == true ) {
+				errs() << "v is Phi node\n";
 				for ( std::vector<Graph::ABCDEdge *>::iterator i = edges.begin(); i != edges.end(); i++ ) {
 					Graph::ABCDEdge *e = *i;
 					Graph::ABCDNode *u = e->source;
@@ -251,6 +258,7 @@ namespace {
 				}
 			}
 			else {
+				errs() << "v is not Phi node\n";
 				for ( std::vector<Graph::ABCDEdge *>::iterator i = edges.begin(); i != edges.end(); i++ ) {
 					Graph::ABCDEdge *e = *i;
 					Graph::ABCDNode *u = e->source;
@@ -321,7 +329,7 @@ namespace {
 				Graph::ABCDNode *v = e->target;
 				int value = e->weight;
 				if ( u->distance + value < v->distance ) {
-					std::cerr << "Error, Graph contains a negative-weight cycle";
+					errs() << "Error, Graph contains a negative-weight cycle\n";
 				}
 			}
 
@@ -512,6 +520,7 @@ namespace {
 				length = cast<ConstantInt>(*(checkInst->getOperand(1))).getSExtValue();
 				for (std::map<Value *, Graph::ABCDNode* >::iterator ANI = inequalityGraph->arrayLengthList.begin(),
 						ANE = inequalityGraph->arrayLengthList.end(); ANI != ANE; ++ANI){
+					//errs() << "checking to see if demand prove is needed\n";
 					if (ANI->second->length == length){
 						if (demandProve(inequalityGraph, source, ANI->second)){//Graph::isRedundant(source, ANI->second)){
 							// delete the instruction and break.
