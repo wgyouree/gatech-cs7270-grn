@@ -161,7 +161,7 @@ namespace {
 
 		ABCDPass() : FunctionPass(ID) {}
 
-		virtual bool demandProve(Graph::ABCDGraph *graph, Graph::ABCDNode *index, Graph::ABCDNode *arrayLength) {
+		virtual bool demandProve(Graph::ABCDGraph *graph, Graph::ABCDNode *arrayLength, Graph::ABCDNode *index) {
 			errs() << "Demand Prove Called\n";
 			Graph::active *active = new Graph::active();
 			Graph::C *C = new Graph::C();
