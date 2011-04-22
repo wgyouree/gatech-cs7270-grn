@@ -18,3 +18,8 @@ ach of its successors. Inside these basic blocks we insert PI instructions for e
 x = pifunction_<variableTypeID>(x);. This ensures a new SSA value is generated when 'mem2reg' pass is invoked.
     
     b) Constructing inequality graph:
+
+
+    c) Using the inequality graph to remove redundant array bounds checks:
+
+	The ABCD algorithm traverses the inequality graph to determine which bounds checks are redundant. It makes use of two additional data structures. The first stores data about previous bounds checks, which is updated on each recurisve call to the "prove" method. The values stored are one of the following, True, Reduced, or False. The second is used to detect cycles. Two types of cycles can be detected, amplifying and "harmless." The algorithm uses two operations called meet and join. The meet operation chooses the maximum value, True > Reduced > False. While the join operation chooses the minimum value. These operations update the values of the checks stored in the first datastructure. The nodes in the graph store an inList, which contains all nodes which may reach the given node, and the value of the edge. If the value falls within a given range, then the edge can chosen as a shortest path. The distance of the shortest path is used to update the check information. At the conclusion of the algorithm, checks with values less than zero are determined to be redundant and can be safely removed.
