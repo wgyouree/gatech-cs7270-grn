@@ -178,10 +178,6 @@ namespace {
 		static char ID;
 
 		ABCDPass() : FunctionPass(ID) {}
-		
-		int meetOperation(int a, int b, int c){
-			return 0;
-		}
 
 		bool demandProve(Graph::ABCDGraph *graph, Graph::ABCDNode *arrayLength, Graph::ABCDNode *index) {
 			errs() << "Demand Prove Called\n";
@@ -210,7 +206,15 @@ namespace {
 			}
 			errs() << "\n\n";
 		}
-
+		
+		int meetOperation(int x, int y, int meetOp){
+			if (meetOp == 0){
+				// min operator
+				return (x >= y) ? x : y;
+			} else
+				return (x <= y) ? x : y;
+		}
+		
 		// use ABCD algorithm to prove redundancy
 		// 1 is True
 		// 0 is Reduced
@@ -600,7 +604,7 @@ namespace {
 						ANE = inequalityGraph->arrayLengthList.end(); ANI != ANE; ++ANI){
 					//errs() << "checking to see if demand prove is needed\n";
 					if (ANI->second->length == length){
-						if (demandProve(inequalityGraph, source, ANI->second)){//Graph::isRedundant(source, ANI->second)){
+						if (demandProve(inequalityGraph, ANI->second, source)){//Graph::isRedundant(source, ANI->second)){
 							// delete the instruction and break.
 							BasicBlock *parent = (*CI)->getParent(), *nextBlock;
 							nextBlock = parent->getTerminator()->getSuccessor(1);
