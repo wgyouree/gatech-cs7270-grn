@@ -244,7 +244,7 @@ namespace {
 					Graph::ABCDEdge *e = *i;
 					Graph::ABCDNode *u = e->source;
 					Graph::ABCDNode *v = e->target;
-					int value = e->weight;
+					//int value = e->weight;
 					int d = distance(graph,u,v);
 					Graph::ABCDCheck *check = Graph::getOrCreateABCDCheck(C,u,v,-1,c);
 					int prove_result = prove(graph, active, C, a, v, c - d);
@@ -263,7 +263,7 @@ namespace {
 					Graph::ABCDEdge *e = *i;
 					Graph::ABCDNode *u = e->source;
 					Graph::ABCDNode *v = e->target;
-					int value = e->weight;
+					//int value = e->weight;
 					int d = distance(graph,u,v);
 					Graph::ABCDCheck *check = Graph::getOrCreateABCDCheck(C,u,v,-1,c);
 					int prove_result = prove(graph, active, C, a, v, c - d);
@@ -303,11 +303,21 @@ namespace {
 					v->distance = 1000000000;
 				}
 				v->predecessor = NULL;
+
+				// create temporary set of edges for Step 2 and 3
+				std::map<Graph::ABCDNode * , int > outList = i->second->outList;
+				Graph::ABCDNode *u = i->second;
+				for ( std::map<Graph::ABCDNode *, int >::iterator j = outList.begin(); j != outList.end(); j++ ) {
+					Graph::ABCDNode *v = j->first;		
+					int value = j->second;
+					edges.push_back(Graph::createABCDEdge(u,v,value));
+				}
 			}
 
 			// Step 2: relax edges repeatedly
 			for ( std::map<Value *, Graph::ABCDNode *>::iterator i = vertices->begin(); i != vertices->end(); i++ ) {
 				// iterator over all outgoing edges, we are going to compare i and j vertices				
+				/*				
 				std::map<Graph::ABCDNode * , int > outList = i->second->outList;
 				Graph::ABCDNode *u = i->second;
 				for ( std::map<Graph::ABCDNode *, int >::iterator j = outList.begin(); j != outList.end(); j++ ) {
@@ -320,6 +330,17 @@ namespace {
 					// create temporary set of edges for Step 3
 					edges.push_back(Graph::createABCDEdge(u,v,value));
 				}
+				*/
+				for ( std::vector<Graph::ABCDEdge*>::iterator j = edges.begin(); j != edges.end(); j++ ) {
+					Graph::ABCDEdge *e = *j;
+					Graph::ABCDNode *u = e->source;
+					Graph::ABCDNode *v = e->target;
+					int value = e->weight;
+					if ( u->distance + value < v->distance ) {
+						v->distance = u->distance + value;
+						v->predecessor = u;
+					}
+				}
 			}
 			
 			// Step 3: check for negative-weight cycles
@@ -330,6 +351,7 @@ namespace {
 				int value = e->weight;
 				if ( u->distance + value < v->distance ) {
 					errs() << "Error, Graph contains a negative-weight cycle\n";
+					break;
 				}
 			}
 
