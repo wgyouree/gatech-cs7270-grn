@@ -34,6 +34,7 @@ namespace Graph{
 		int distance;
 		bool isPhi;
 		ABCDNode_ *predecessor;
+		int name;
 	};
 	typedef struct ABCDNode_ ABCDNode;
 
@@ -293,6 +294,7 @@ namespace {
 			std::map<Value *, Graph::ABCDNode *> *vertices = &(graph->variableList);
 			
 			// Step 1: initialize Graph
+			int nameCount = 0;
 			for ( std::map<Value *, Graph::ABCDNode *>::iterator i = vertices->begin(); i != vertices->end(); i++ ) {
 				Graph::ABCDNode *v = i->second;
 				if ( v == source ) {
@@ -303,7 +305,11 @@ namespace {
 					v->distance = 1000000000;
 				}
 				v->predecessor = NULL;
+				v->name = nameCount;
+				nameCount++;
+			}
 
+			for ( std::map<Value *, Graph::ABCDNode *>::iterator i = vertices->begin(); i != vertices->end(); i++ ) {
 				// create temporary set of edges for Step 2 and 3
 				std::map<Graph::ABCDNode * , int > outList = i->second->outList;
 				Graph::ABCDNode *u = i->second;
@@ -311,6 +317,7 @@ namespace {
 					Graph::ABCDNode *v = j->first;		
 					int value = j->second;
 					edges.push_back(Graph::createABCDEdge(u,v,value));
+					errs() << "node " << u->name << " target " << v->name << " has value " << value << "\n";
 				}
 			}
 
