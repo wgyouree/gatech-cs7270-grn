@@ -57,13 +57,38 @@ namespace {
 			for (std::list<BranchInst *>::iterator brIter = brList.begin(); brIter != brList.end(); ++brIter){
 				Value *operands[2];
 				BranchInst *curBR = *brIter;
+				if (curBR->isUnconditional())
+					continue;
 				CmpInst *cmp = (CmpInst *)(curBR->getCondition());
 				operands[0] = cmp->getOperand(0);
 				operands[1] = cmp->getOperand(1);
 
+				
 				BasicBlock *newPIBlock;
 				const Type *opType;
 				char piFuncName[20];
+				bool exit = false;
+
+				for (int j = 0; j < 2; j++){
+					if (isa<Constant>(*operands[j]))
+						continue;
+					if (!isa<LoadInst>(*operands[j]))
+						continue;
+					opType = operands[j]->getType();
+					std::vector<const Type *> params = std::vector<const Type *>();
+					params.push_back(opType);
+					FunctionType *fType = FunctionType::get(opType, params, false);
+					sprintf(piFuncName, "%s%d", PIFUNCNAME, opType->getTypeID());
+					Constant *ct = (m->getOrInsertFunction(StringRef(piFuncName), fType));
+					if (!isa<Function>(*ct)){
+						exit = true;
+						break;
+					}
+				}
+
+				if (exit)
+					continue;
+
 				for (int i=0; i < curBR->getNumSuccessors(); i++){
 					newPIBlock = NULL;
 					curBB = curBR->getSuccessor(i);
@@ -83,9 +108,10 @@ namespace {
 						params.push_back(opType);
 						FunctionType *fType = FunctionType::get(opType, params, false);
 						sprintf(piFuncName, "%s%d", PIFUNCNAME, opType->getTypeID());
-						Function *temp = (Function *)(m->getOrInsertFunction(piFuncName, fType));
+						Function *temp = (Function *)(m->getOrInsertFunction(StringRef(piFuncName), fType));
+					
                   
-            if((temp->getBasicBlockList()).size() == 0){
+						if((temp->getBasicBlockList()).size() == 0){
 							BasicBlock *returnBB = BasicBlock::Create(temp->getContext(), "return", temp);
 							BasicBlock *entryBB = BasicBlock::Create(temp->getContext(), "entry", temp, returnBB);
 							BranchInst *newBr = BranchInst::Create(returnBB,entryBB);
