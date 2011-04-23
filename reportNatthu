@@ -24,6 +24,21 @@ x = pifunction_<variableTypeID>(x);. This ensures a new SSA value is generated w
     The graph consists of primarily two types of vertices: array length nodes and variables. Variables in turn can be PHI or non-PHI.
       (i) For every ArrayType AllocaInst, we create a new vertex in the graph which stores - the array length and a pointer to the actual instruction.
       (ii) For every PHI node, we have edges of weight 0 between the output and each of the incoming values. If an incoming value is constant, the output vertex is connected to all the array length vertices with weight = constant.value - Array length.
+      (iii)For Binary Operator Instructions: If the instruction is of the type Binary Operator, then we check if the binary operation is an addition or subtraction operation. If thats the case then, we continue to check if one of the operands in the instruction is a constant. If both the conditions are satisfied, we modify the suitably reflect the operation. For an operation of the type x = y + c, we introduce an edge in the graph from y to c with a weight c. If the operation is subtraction, then a weight of -c is given to the edge.
+
+      (iv)For PI instructions: We have implemented PI instructions as function calls with custom names given by us. Hence, whenever we encounter call instructions with out custom name, we recognize those as the PI instructions. Each PI instruction is the result of some comparison operation. The comparison might be between 2 variables or a constant and a variable. Also, the comparison operator between the operands might be LT, Equal to, GT, LT Equal to or GT Equal to. Moreover, the current PI instruction being considered might be the result of a true or a false comparison which can be detected by the block that the PI instruction is located in. We consider all of these cases with the logic to handle each derived as follows:
+If the code is of the form:
+if v1 <= w1 then
+	v2 = pi(v1)
+	w2 = pi(w1)
+else
+	v3 = pi(v1)
+	w3 = pi(w1)	
+	
+then in the graph for the true block edges are inserted from v1 to v2, w1 to w2 & w2 to v2 while for the false block edges are inserted from v1 to v3, w1 to w3 and also from v3 to w3 with a weight of -1.
+
+Moreover, if one of the operands in the comparison is a constant, we then we directly introduce an edge from the other operand to all the array length nodes in the graph assigning weight constant - array length to the edge.
+
 
 
     c) Using the inequality graph to remove redundant array bounds checks:
