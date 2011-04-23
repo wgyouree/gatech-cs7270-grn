@@ -180,7 +180,7 @@ namespace {
 		ABCDPass() : FunctionPass(ID) {}
 
 		bool demandProve(Graph::ABCDGraph *graph, Graph::ABCDNode *arrayLength, Graph::ABCDNode *index) {
-			errs() << "Demand Prove Called\n";
+			//errs() << "Demand Prove Called\n";
 			Graph::active *active = new Graph::active();
 			Graph::C *C = new Graph::C();
 			int c = -1;
@@ -223,8 +223,8 @@ namespace {
 			
 			Graph::ABCDCheck *check = Graph::createABCDCheck(a, v, c);
 
-			printContentsOfActive(active);
-			printContentsOfC(C);
+			//printContentsOfActive(active);
+			//printContentsOfC(C);
 
 			// same or stronger difference was already proven
 			if ( C->valueMap.find(*check) != C->valueMap.end() ) {
@@ -261,16 +261,16 @@ namespace {
 			// a cycle was encountered
 			if ( active->valueMap.find(v) != active->valueMap.end() ) {
 				if ( c > active->valueMap.find(v)->second ) {
-					errs() << "an amplifying cycle\n";
+					//errs() << "an amplifying cycle\n";
 					return -1; // an amplifying cycle
 				}
 				else {
-					errs() << "a harmless cycle\n";
+					//errs() << "a harmless cycle\n";
 					return 0; // a "harmless" cycle
 				}
 			}
 			
-			errs() << "added a value to Active\n";
+			//errs() << "added a value to Active\n";
 			active->valueMap.insert(std::pair<Graph::ABCDNode *, int>(v, c) );
 			
 /*			// create set of edges for recursive part of algorithm
@@ -289,12 +289,12 @@ namespace {
 */
 
 			if ( v->isPhi == true ) {
-				errs() << "v is Phi node\n";
+				//errs() << "v is Phi node\n";
 				for(std::map<Graph::ABCDNode * , int>::iterator i = (v->inList).begin(); i != (v->inList).end(); i++){
 					Graph::ABCDNode *u = i->first;
 					int d = i->second;
 					int prove_result = prove(graph, active, C, a, i->first, c - d);
-					Graph::ABCDCheck* existingCheck = Graph::getABCDCheck(C,u,v,c);
+					Graph::ABCDCheck* existingCheck = Graph::getABCDCheck(C,a,v,c);
 					
 				
 					if(existingCheck == NULL){
@@ -309,12 +309,12 @@ namespace {
 				}
 			}
 			else {
-				errs() << "v is Non-Phi node\n";
+				//errs() << "v is Non-Phi node\n";
 				for(std::map<Graph::ABCDNode * , int>::iterator i = (v->inList).begin(); i != (v->inList).end(); i++){
 					Graph::ABCDNode *u = i->first;
 					int d = i->second;
 					int prove_result = prove(graph, active, C, a, i->first, c - d);
-					Graph::ABCDCheck* existingCheck = Graph::getABCDCheck(C,u,v,c);
+					Graph::ABCDCheck* existingCheck = Graph::getABCDCheck(C,a,v,c);
 					
 				
 					if(existingCheck == NULL){
@@ -333,97 +333,6 @@ namespace {
 
 			return Graph::getValue(C, *check); // return C[v - a <= c]
 		}
-
-
-		// calculate shortest distance between source and target
-		// uses Bellman-Ford algorithm - Assumes no negative cycles
-/*		virtual int distance(Graph::ABCDGraph *graph, Graph::ABCDNode *source, Graph::ABCDNode *target) {
-			
-			// create map to store edges for Step 3
-			std::vector<Graph::ABCDEdge *> edges;
-			
-			// get reference to vertex set
-			std::map<Value *, Graph::ABCDNode *> *vertices = &(graph->variableList);
-			
-			// Step 1: initialize Graph
-			int nameCount = 0;
-			for ( std::map<Value *, Graph::ABCDNode *>::iterator i = vertices->begin(); i != vertices->end(); i++ ) {
-				Graph::ABCDNode *v = i->second;
-				if ( v == source ) {
-					v->distance = 0;
-				}
-				else {
-					// infinity
-					v->distance = 1000000000;
-				}
-				v->predecessor = NULL;
-				v->name = nameCount;
-				nameCount++;
-			}
-
-			for ( std::map<Value *, Graph::ABCDNode *>::iterator i = vertices->begin(); i != vertices->end(); i++ ) {
-				// create temporary set of edges for Step 2 and 3
-				std::map<Graph::ABCDNode * , int > outList = i->second->outList;
-				Graph::ABCDNode *u = i->second;
-				for ( std::map<Graph::ABCDNode *, int >::iterator j = outList.begin(); j != outList.end(); j++ ) {
-					Graph::ABCDNode *v = j->first;		
-					int value = j->second;
-					edges.push_back(Graph::createABCDEdge(u,v,value));
-					errs() << "node " << u->name << " target " << v->name << " has value " << value << "\n";
-				}
-			}
-
-			// Step 2: relax edges repeatedly
-			for ( std::map<Value *, Graph::ABCDNode *>::iterator i = vertices->begin(); i != vertices->end(); i++ ) {
-				// iterator over all outgoing edges, we are going to compare i and j vertices				
-								
-//				std::map<Graph::ABCDNode * , int > outList = i->second->outList;
-//				Graph::ABCDNode *u = i->second;
-//				for ( std::map<Graph::ABCDNode *, int >::iterator j = outList.begin(); j != outList.end(); j++ ) {
-//					Graph::ABCDNode *v = j->first;		
-//					int value = j->second;
-//					if ( u->distance + value < v->distance ) {
-//						v->distance = u->distance + value;
-//						v->predecessor = u;
-//					}
-//					// create temporary set of edges for Step 3
-//					edges.push_back(Graph::createABCDEdge(u,v,value));
-				}
-				
-				for ( std::vector<Graph::ABCDEdge*>::iterator j = edges.begin(); j != edges.end(); j++ ) {
-					Graph::ABCDEdge *e = *j;
-					Graph::ABCDNode *u = e->source;
-					Graph::ABCDNode *v = e->target;
-					int value = e->weight;
-					if ( u->distance + value < v->distance ) {
-						v->distance = u->distance + value;
-						v->predecessor = u;
-					}
-				}
-			}
-			
-			// Step 3: check for negative-weight cycles
-			for ( std::vector<Graph::ABCDEdge*>::iterator i = edges.begin(); i != edges.end(); i++ ) {
-				Graph::ABCDEdge *e = *i;
-				Graph::ABCDNode *u = e->source;
-				Graph::ABCDNode *v = e->target;
-				int value = e->weight;
-				if ( u->distance + value < v->distance ) {
-					errs() << "Error, Graph contains a negative-weight cycle\n";
-					break;
-				}
-			}
-
-			// calculate distance between source and target
-			int result = 0;
-			Graph::ABCDNode *current = target;
-			while ( current != source ) {
-				result += current->distance;
-				current = current->predecessor;
-			}
-			return result;
-		}
-*/		
 
 		virtual bool runOnFunction(Function &F){
 			char *EXITNAME = "exitBlock";
@@ -491,11 +400,11 @@ namespace {
                     Graph::ABCDNode* nodeTo[2];
                     int i = 0, cntPI = 0;
                     do{
-                        if(cast<CallInst>(&*temp_I)->getCalledFunction()->getName().startswith(StringRef(PIFUNCNAME))){ 
-                        
+                        if(cast<CallInst>(&*temp_I)->getCalledFunction()->getName().startswith(StringRef(PIFUNCNAME))){
                             Graph::ABCDNode* nodeFrom = Graph::getOrInsertNode(inequalityGraph,cast<CallInst>(&*temp_I)->getArgOperand(0),0);
                             nodeTo[cntPI] = Graph::getOrInsertNode(inequalityGraph,((Value*)&*temp_I),0);
-                            Graph::insertEdge(nodeFrom,nodeTo[cntPI],0);
+							//if (!I->getParent()->getTerminator()->getSuccessor(0)->getName().startswith(StringRef("bounds")))						
+                            	Graph::insertEdge(nodeFrom,nodeTo[cntPI],0);
                             i--;
                             cntPI++;
                         }
@@ -618,9 +527,8 @@ namespace {
 					}
 				}
 			}
-			errs() << arrayCheckInstList.size() << "\n";
-			errs() << inequalityGraph->arrayLengthList.size() << "\n";
-			errs() << toDeleteList.size() << "\n";
+			errs() << "Number of array checks: " << arrayCheckInstList.size() << "\n";
+			errs() << "Redundant array checks: " << toDeleteList.size() << "\n";
 			while (!toDeleteList.empty()){
 				Instruction *cur = toDeleteList.back();
 				toDeleteList.pop_back();
