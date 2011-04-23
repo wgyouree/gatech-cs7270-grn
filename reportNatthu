@@ -3,6 +3,9 @@ CS6241: Compiler Optimizations
 Project - Phase 1
 `````````````````
 
+Team Members:
+Ravi Mangal, Natthu Bharambe and Greg Youree.
+
 (1) Array bounds checks (upperbound) are introduced whenever we encounter a GetElementPtr instruction for a statically allocated array. The basic block contain
 ing the instruction is broken into 2 blocks, the GetElementPtr instruction being in the second half, and a compare instruction introduced in the first block fo
 llowed by a branch instruction, which is linked to an "exitBlock" in case the array bounds check fails. Program execution stops if control flow reaches the "ex
@@ -18,6 +21,9 @@ ach of its successors. Inside these basic blocks we insert PI instructions for e
 x = pifunction_<variableTypeID>(x);. This ensures a new SSA value is generated when 'mem2reg' pass is invoked.
     
     b) Constructing inequality graph:
+    The graph consists of primarily two types of vertices: array length nodes and variables. Variables in turn can be PHI or non-PHI.
+      (i) For every ArrayType AllocaInst, we create a new vertex in the graph which stores - the array length and a pointer to the actual instruction.
+      (ii) For every PHI node, we have edges of weight 0 between the output and each of the incoming values. If an incoming value is constant, the output vertex is connected to all the array length vertices with weight = constant.value - Array length.
 
 
     c) Using the inequality graph to remove redundant array bounds checks:
