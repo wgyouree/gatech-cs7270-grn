@@ -179,6 +179,90 @@ namespace {
 
 		ABCDPass() : FunctionPass(ID) {}
 
+		bool testDemandProve() {
+			Graph::ABCDGraph *graph = new Graph::ABCDGraph();
+			
+			std::map<llvm::Value*, Graph::ABCDNode* > arrayLengthList;
+			std::map<llvm::Value*, Graph::ABCDNode* > variableList;
+
+			Graph::ABCDNode *minusOne = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, minusOne);
+			/*
+			Graph::ABCDNode *st0 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, st0);
+			
+			Graph::ABCDNode *st1 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, st1);
+
+			Graph:ABCDNode *st2 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, st2);
+
+			Graph::ABCDNode *st3 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, st3);
+
+			Graph::ABCDNode *i0 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, i0);
+
+			Graph::ABCDNode *i1 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, i1;
+
+			Graph::ABCDNode *i2 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, i2);
+
+			Graph::ABCDNode *i3 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, i3);
+
+			Graph::ABCDNode *i4 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, i4);
+
+			Graph::ABCDNode *t0 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, t0);
+
+			Graph::ABCDNode *AdotLength = Graph::createNode(NULL, 0);
+			arrayLengthList.insert(NULL, AdotLength);
+
+			Graph::ABCDNode *limit0 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, limit0);
+
+			Graph::ABCDNode *limit1 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, limit1);
+
+			Graph::ABCDNode *limit2 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, limit2);
+
+			Graph::ABCDNode *limit3 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, limit3);
+
+			Graph::ABCDNode *limit4 = Graph::createNode(NULL, 0);
+			variableList.insert(NULL, limit4);
+
+			Graph::insertEdge ( minusOne, st0, 0 );
+			Graph::insertEdge ( st0, st1, 0 );
+			Graph::insertEdge ( st1, st2, 0 );
+			Graph::insertEdge ( st3, st1, 0 );
+			Graph::insertEdge ( st2, st3, 1 );
+			Graph::insertEdge ( limit2, st2, -1 );
+			Graph::insertEdge ( limit1, limit2, 0 );
+			Graph::insertEdge ( limit0, limit1, 0 );
+			Graph::insertEdge ( limit3, limit1, 0 );
+			Graph::insertEdge ( limit2, limit3, -1 );
+			Graph::insertEdge ( AdotLength, limit0, 0 );
+			Graph::insertEdge ( limit3, limit4, 0 );
+			Graph::insertEdge ( limit4, i2, -1 );
+			Graph::insertEdge ( i2, i3, 0 );
+			Graph::insertEdge ( i3, t0, 1 );
+			Graph::insertEdge ( AdotLength, i3, -1 );
+			Graph::insertEdge ( i3, i4, 1 );
+			Graph::insertEdge ( i4, i1, 0 );
+			Graph::insertEdge ( i1, i2, 0 );
+			Graph::insertEdge ( st3, i0, 0 );
+			Graph::insertEdge ( i0, i1, 0 );
+			*/
+			
+			// result should be true
+			return demandProve(graph, AdotLength, i2);
+		}
+
 		bool demandProve(Graph::ABCDGraph *graph, Graph::ABCDNode *arrayLength, Graph::ABCDNode *index) {
 			//errs() << "Demand Prove Called\n";
 			Graph::active *active = new Graph::active();
