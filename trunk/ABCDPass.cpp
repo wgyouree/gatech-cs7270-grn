@@ -179,90 +179,6 @@ namespace {
 
 		ABCDPass() : FunctionPass(ID) {}
 
-		bool testDemandProve() {
-			Graph::ABCDGraph *graph = new Graph::ABCDGraph();
-			
-			std::map<llvm::Value*, Graph::ABCDNode* > arrayLengthList;
-			std::map<llvm::Value*, Graph::ABCDNode* > variableList;
-
-			Graph::ABCDNode *minusOne = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, minusOne);
-			/*
-			Graph::ABCDNode *st0 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, st0);
-			
-			Graph::ABCDNode *st1 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, st1);
-
-			Graph:ABCDNode *st2 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, st2);
-
-			Graph::ABCDNode *st3 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, st3);
-
-			Graph::ABCDNode *i0 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, i0);
-
-			Graph::ABCDNode *i1 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, i1;
-
-			Graph::ABCDNode *i2 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, i2);
-
-			Graph::ABCDNode *i3 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, i3);
-
-			Graph::ABCDNode *i4 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, i4);
-
-			Graph::ABCDNode *t0 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, t0);
-
-			Graph::ABCDNode *AdotLength = Graph::createNode(NULL, 0);
-			arrayLengthList.insert(NULL, AdotLength);
-
-			Graph::ABCDNode *limit0 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, limit0);
-
-			Graph::ABCDNode *limit1 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, limit1);
-
-			Graph::ABCDNode *limit2 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, limit2);
-
-			Graph::ABCDNode *limit3 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, limit3);
-
-			Graph::ABCDNode *limit4 = Graph::createNode(NULL, 0);
-			variableList.insert(NULL, limit4);
-
-			Graph::insertEdge ( minusOne, st0, 0 );
-			Graph::insertEdge ( st0, st1, 0 );
-			Graph::insertEdge ( st1, st2, 0 );
-			Graph::insertEdge ( st3, st1, 0 );
-			Graph::insertEdge ( st2, st3, 1 );
-			Graph::insertEdge ( limit2, st2, -1 );
-			Graph::insertEdge ( limit1, limit2, 0 );
-			Graph::insertEdge ( limit0, limit1, 0 );
-			Graph::insertEdge ( limit3, limit1, 0 );
-			Graph::insertEdge ( limit2, limit3, -1 );
-			Graph::insertEdge ( AdotLength, limit0, 0 );
-			Graph::insertEdge ( limit3, limit4, 0 );
-			Graph::insertEdge ( limit4, i2, -1 );
-			Graph::insertEdge ( i2, i3, 0 );
-			Graph::insertEdge ( i3, t0, 1 );
-			Graph::insertEdge ( AdotLength, i3, -1 );
-			Graph::insertEdge ( i3, i4, 1 );
-			Graph::insertEdge ( i4, i1, 0 );
-			Graph::insertEdge ( i1, i2, 0 );
-			Graph::insertEdge ( st3, i0, 0 );
-			Graph::insertEdge ( i0, i1, 0 );
-			*/
-			
-			// result should be true
-			return demandProve(graph, AdotLength, i2);
-		}
-
 		bool demandProve(Graph::ABCDGraph *graph, Graph::ABCDNode *arrayLength, Graph::ABCDNode *index) {
 			//errs() << "Demand Prove Called\n";
 			Graph::active *active = new Graph::active();
@@ -304,41 +220,153 @@ namespace {
 		// 0 is Reduced
 		// -1 is False
 		int prove(Graph::ABCDGraph *graph, Graph::active *active, Graph::C *C, Graph::ABCDNode *a, Graph::ABCDNode *v, int c) {
-			
-			Graph::ABCDCheck *check = Graph::createABCDCheck(a, v, c);
+
+			Graph::ABCDCheck *check1 = Graph::createABCDCheck(a, v, -1);
+			Graph::ABCDCheck *check2 = Graph::createABCDCheck(a, v, 0);
+			Graph::ABCDCheck *check3 = Graph::createABCDCheck(a, v, 1);
 
 			//printContentsOfActive(active);
 			//printContentsOfC(C);
 
-			// same or stronger difference was already proven
-			if ( C->valueMap.find(*check) != C->valueMap.end() ) {
-/*				int result = C->valueMap.find(check)->second;
-				if ( result == 1 ) {
-					errs() << "same or stronger difference was already proven\n";
-					return 1;
+			bool hasCheck1 = C->valueMap.find(*check1) == C->valueMap.end();
+			bool hasCheck2 = C->valueMap.find(*check2) == C->valueMap.end();
+			bool hasCheck3 = C->valueMap.find(*check3) == C->valueMap.end();
+
+			if ( c == -1 ) {
+				// same or stronger difference was already proven
+				if ( hasCheck1 ) {
+					int result = C->valueMap.find(*check1)->second;
+					if ( result == 1 ) {
+						//errs() << "same or stronger difference was already proven\n";
+						return 1;
+					}
 				}
 				// same or weaker difference was already proven
-				else if ( result == -1 ) {
-					errs() << "same or weaker difference was already proven\n";
-					return -1;
+				if ( hasCheck1 || hasCheck2 || hasCheck3 ) {
+					bool result = false;
+					if ( hasCheck1 && C->valueMap.find(*check1)->second == -1 ) {
+						result = true;
+					}
+					else if ( hasCheck2 && C->valueMap.find(*check2)->second == -1 ) {
+						result = true;
+					}
+					else if ( hasCheck3 && C->valueMap.find(*check3)->second == -1 ) {
+						result = true;
+					}
+					if ( result == true ) {
+						//errs() << "same or weaker difference was already proven\n";
+						return -1;
+					}
 				}
 				// v is on a cycle that was reduced for same or stronger difference
-				else if ( result == 0 ) {
-					errs() << "v is on a cycle that was reduced for same or stronger difference\n";
-					return 0;
+				if ( hasCheck1 ) {
+					int result = C->valueMap.find(*check1)->second;
+					if ( result == 0 ) {
+						//errs() << "v is on a cycle that was reduced for same or stronger difference\n";
+						return 0;
+					}
 				}
-*/
-				// traversal reached the source vertex, success if a - a <= c
-				if ( v == a && c >= 0 ) {
-					errs() << "traversal reached the source vertex, success if a - a <= c\n";
-					return 1;
+			}
+			else if ( c == 0 ) {
+				// same or stronger difference was already proven
+				if ( hasCheck1 || hasCheck2 ) {
+					bool result = false;
+					if ( hasCheck1 && C->valueMap.find(*check1)->second == 1 ) {
+						result = true;
+					}
+					else if ( hasCheck2 && C->valueMap.find(*check2)->second == 1 ) {
+						result = true;
+					}
+					if ( result == true ) {
+						//errs() << "same or stronger difference was already proven\n";
+						return 1;
+					}
+				}
+				// same or weaker difference was already proven
+				if ( hasCheck2 || hasCheck3 ) {
+					bool result = false;
+					if ( hasCheck2 && C->valueMap.find(*check2)->second == -1 ) {
+						result = true;
+					}
+					else if ( hasCheck3 && C->valueMap.find(*check3)->second == -1 ) {
+						result = true;
+					}
+					if ( result == true) {
+						//errs() << "same or weaker difference was already proven\n";
+						return -1;
+					}
+				}
+				// v is on a cycle that was reduced for same or stronger difference
+				if ( hasCheck1 || hasCheck2 ) {
+					bool result = false;
+					if ( hasCheck1 && C->valueMap.find(*check1)->second == 0 ) {
+						result = true;
+					}
+					else if ( hasCheck2 && C->valueMap.find(*check2)->second == 0 ) {
+						result = true;
+					}
+					if ( result == true ) {
+						//errs() << "v is on a cycle that was reduced for same or stronger difference\n";
+						return 0;
+					}
 				}
 
-				// if no constraint exist on the value of v, we fail
-				if ( v->inList.size() == 0 ) {
-					errs() << "if no constraint exist on the value of v, we fail\n";
-					return -1;
+			}
+			else if ( c == 1 ) {
+				// same or stronger difference was already proven
+				if ( hasCheck1 || hasCheck2 || hasCheck3 ) {
+					bool result = false;
+					if ( hasCheck1 && C->valueMap.find(*check1)->second == 1 ) {
+						result = true;
+					}
+					else if ( hasCheck2 && C->valueMap.find(*check2)->second == 1 ) {
+						result = true;
+					}
+					else if ( hasCheck3 && C->valueMap.find(*check3)->second == 1 ) {
+						result = true;
+					}
+					if ( result == true ) {
+						//errs() << "same or stronger difference was already proven\n";
+						return 1;
+					}
 				}
+				// same or weaker difference was already proven
+				if ( hasCheck3 ) {
+					int result = C->valueMap.find(*check3)->second;
+					if ( result == -1 ) {
+						//errs() << "same or weaker difference was already proven\n";
+						return -1;
+					}
+				}
+				// v is on a cycle that was reduced for same or stronger difference
+				if ( hasCheck1 || hasCheck2 || hasCheck3 ) {
+					bool result = false;
+					if ( hasCheck1 && C->valueMap.find(*check1)->second == 0 ) {
+						result = true;
+					}
+					else if ( hasCheck2 && C->valueMap.find(*check2)->second == 0 ) {
+						result = true;
+					}
+					else if ( hasCheck3 && C->valueMap.find(*check3)->second == 0 ) {
+						result = true;
+					}
+					if ( result == true ) {
+						//errs() << "v is on a cycle that was reduced for same or stronger difference\n";
+						return 0;
+					}
+				}
+			}
+
+			// traversal reached the source vertex, success if a - a <= c
+			if ( v == a && c >= 0 ) {
+				//errs() << "traversal reached the source vertex, success if a - a <= c\n";
+				return 1;
+			}
+
+			// if no constraint exist on the value of v, we fail
+			if ( v->inList.size() == 0 ) {
+				//errs() << "if no constraint exist on the value of v, we fail\n";
+				return -1;
 			}
 			
 
@@ -371,6 +399,8 @@ namespace {
 				}
 			}
 */
+			
+			Graph::ABCDCheck *check = Graph::createABCDCheck(a, v, c);
 
 			if ( v->isPhi == true ) {
 				//errs() << "v is Phi node\n";
