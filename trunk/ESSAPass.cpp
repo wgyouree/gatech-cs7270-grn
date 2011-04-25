@@ -91,17 +91,14 @@ namespace {
 //
 //				if (exit)
 //					continue;
-				errs() << "Starting ";
 				for (int i=0; i < curBR->getNumSuccessors(); i++){
 					newPIBlock = NULL;
 					curBB = curBR->getSuccessor(i);
 					if (curBB->getName().equals(*exitBBName))
 						continue;
 					for (int j = 0; j < 2; j++){
-						errs () << "pred " << cmp->getPredicate();
 						if (isa<Constant>(*operands[j]))
 							continue;
-					errs() << " Mid1 ";
 						if (!isa<LoadInst>(*operands[j]))
 							continue;
 						if(!newPIBlock){
@@ -109,7 +106,6 @@ namespace {
 							curBB->removePredecessor(curBR->getParent(), false);
 							curBR->setSuccessor(i, newPIBlock);
 						}
-						errs() << " Mid ";
 						opType = operands[j]->getType();
 						std::vector<const Type *> params;// = std::vector<const Type *>();
 						params.push_back(opType);
@@ -133,7 +129,6 @@ namespace {
 						BranchInst::Create(curBB, newPIBlock);
 				}
 
-				errs() << "Stop\n";
 			}
 
 			return true;
