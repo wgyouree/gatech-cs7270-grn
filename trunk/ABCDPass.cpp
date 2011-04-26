@@ -44,9 +44,9 @@ namespace Graph{
 
 	typedef struct{
 		std::map<llvm::Value*, ABCDNode* > arrayLengthList;
-	   	std::map<llvm::Value*, ABCDNode* > variableList;
+		std::map<llvm::Value*, ABCDNode* > variableList;
 	}ABCDGraph;
-	
+
 	//So the graph is essentially just a list(vector) of nodes.
 	//Helper functions that needed to be implemented:
 
@@ -60,12 +60,12 @@ namespace Graph{
 	}
 
 	/*
-	As the name suggests, get the node if already present in the list,
-	(search on the Value*) or create a node with empty edge lists and 
-	the given value and return it.
-	If value isa<AllocaInst> insert into arrayLengthList with the input length,
-	else in the variableList.
-	*/
+	   As the name suggests, get the node if already present in the list,
+	   (search on the Value*) or create a node with empty edge lists and 
+	   the given value and return it.
+	   If value isa<AllocaInst> insert into arrayLengthList with the input length,
+	   else in the variableList.
+	 */
 	ABCDNode *getOrInsertNode(ABCDGraph *graph, llvm::Value *value, int length){
 		std::map<llvm::Value*, ABCDNode* > *list;
 		std::map<llvm::Value*, ABCDNode* >::iterator it;
@@ -79,8 +79,8 @@ namespace Graph{
 	}
 
 	/*
-	Create two edges - out edge for n1 and in edge for n2.
-	*/
+	   Create two edges - out edge for n1 and in edge for n2.
+	 */
 	void insertEdge(ABCDNode *n1, ABCDNode *n2, int weight){
 		std::map<ABCDNode* , int >::iterator it;
 		it = n1->outList.find(n2);
@@ -90,86 +90,91 @@ namespace Graph{
 		if (it == n2->inList.end())
 			n2->inList.insert(NodeIntPair(n1, weight));
 	}
-	
 
-	//Structures to enable graph distance computation
-	struct ABCDCheck_ {
+
+	/*	//Structures to enable graph distance computation
+		struct ABCDCheck_ {
 		ABCDNode *source;
 		ABCDNode *target;
 		int value;
-		
+
 		bool operator<(const struct ABCDCheck_& a)const;
-	};
-	typedef struct ABCDCheck_ ABCDCheck;
-	
+		};
+		typedef struct ABCDCheck_ ABCDCheck;
+
 	//Overload to use map class with ABCDCheck as key
 	bool ABCDCheck::operator<(const ABCDCheck& a)const{
-		if(this->value < a.value || this->source < a.source || this->target < a.target)	
-			return true;
-		return false;
+	if(this->value < a.value || this->source < a.source || this->target < a.target)	
+	return true;
+	return false;
 	}
-	
+
 
 
 	ABCDCheck *createABCDCheck(ABCDNode *source, ABCDNode *target, int value) {
-		ABCDCheck *check = new ABCDCheck();
-		check->source = source;
-		check->target = target;
-		check->value = value;
-		return check;
+	ABCDCheck *check = new ABCDCheck();
+	check->source = source;
+	check->target = target;
+	check->value = value;
+	return check;
 	}
 
 	typedef struct {
-		std::map<ABCDCheck, int> valueMap;
+	std::map<ABCDCheck, int> valueMap;
 	} C;
 
+	C* createC() {
+	return new C();
+	}
+
+	void addABCDCheck(C* C, ABCDCheck check, int value) {
+	(C->valueMap).insert(std::pair<ABCDCheck, int>(check, value));
+	}
+
+	ABCDCheck* getABCDCheck(C* C, ABCDNode *u, ABCDNode *v, int value) {
+	ABCDCheck *check = createABCDCheck(u,v,value);
+	std::map<ABCDCheck, int>::iterator existingCheck = C->valueMap.find(*check);
+	if ( existingCheck == C->valueMap.end() ) {
+	return NULL;
+	}
+	return (ABCDCheck*)(&(existingCheck->first));
+	}
+
+	int getValue(C *c, ABCDCheck check) {
+	std::map<ABCDCheck, int>::iterator result = c->valueMap.find(check);
+	if ( result != c->valueMap.end() ) {
+	return result->second;
+	}
+	return -1;
+	}
+
+
+	 */
 	typedef struct {
 		std::map<ABCDNode *, int> valueMap;
 	} active;
 
-	C* createC() {
-		return new C();
-	}
 
 	active* createActive() {
 		return new active();
 	}
 
-	void addABCDCheck(C* C, ABCDCheck check, int value) {
-		(C->valueMap).insert(std::pair<ABCDCheck, int>(check, value));
-	}
 
-	ABCDCheck* getABCDCheck(C* C, ABCDNode *u, ABCDNode *v, int value) {
-		ABCDCheck *check = createABCDCheck(u,v,value);
-		std::map<ABCDCheck, int>::iterator existingCheck = C->valueMap.find(*check);
-		if ( existingCheck == C->valueMap.end() ) {
-			return NULL;
-		}
-		return (ABCDCheck*)(&(existingCheck->first));
-	}
 
-	int getValue(C *c, ABCDCheck check) {
-		std::map<ABCDCheck, int>::iterator result = c->valueMap.find(check);
-		if ( result != c->valueMap.end() ) {
-			return result->second;
-		}
-		return -1;
-	}
-	
-/*	typedef struct {
+	/*	typedef struct {
 		ABCDNode *source;
 		ABCDNode *target;
 		int weight;
-	} ABCDEdge;
+		} ABCDEdge;
 
-	ABCDEdge *createABCDEdge(ABCDNode *source, ABCDNode *target, int weight) {
+		ABCDEdge *createABCDEdge(ABCDNode *source, ABCDNode *target, int weight) {
 		ABCDEdge *edge = new ABCDEdge();
 		edge->source = source;
 		edge->target = target;
 		edge->weight = weight;
 		return edge;
-	}
-*/	
+		}
+	 */	
 }
 
 namespace {
@@ -182,12 +187,16 @@ namespace {
 		bool demandProve(Graph::ABCDGraph *graph, Graph::ABCDNode *arrayLength, Graph::ABCDNode *index) {
 			//errs() << "Demand Prove Called\n";
 			Graph::active *active = new Graph::active();
-			Graph::C *C = new Graph::C();
+			//Graph::C *C = new Graph::C();
 			int c = -1;
 
-			if ( prove ( graph, active, C, arrayLength, index, c ) >= 0 ) {
+			if ( prove ( graph, active, arrayLength, index, c ) >= 0 ) {
+				delete active;
+				//delete C;
 				return true;
 			}
+			delete active;
+			//delete C;
 			return false;
 		}
 
@@ -199,14 +208,14 @@ namespace {
 			errs() << "\n\n";
 		}
 
-		void printContentsOfC(Graph::C *c) {
-			errs() << "C contains: " << c->valueMap.size() << " entries:\n";
-			for ( std::map<Graph::ABCDCheck, int>::iterator i = c->valueMap.begin(); i != c->valueMap.end(); i++ ) {
+		/*		void printContentsOfC(Graph::C *c) {
+				errs() << "C contains: " << c->valueMap.size() << " entries:\n";
+				for ( std::map<Graph::ABCDCheck, int>::iterator i = c->valueMap.begin(); i != c->valueMap.end(); i++ ) {
 				errs() << i->second << "\n";
-			}
-			errs() << "\n\n";
-		}
-		
+				}
+				errs() << "\n\n";
+				}
+		 */
 		int meetOperation(int x, int y, int meetOp){
 			if (meetOp == 0){
 				// min operator
@@ -214,16 +223,16 @@ namespace {
 			} else
 				return (x <= y) ? x : y;
 		}
-		
+
 		// use ABCD algorithm to prove redundancy
 		// 1 is True
 		// 0 is Reduced
 		// -1 is False
-		int prove(Graph::ABCDGraph *graph, Graph::active *active, Graph::C *C, Graph::ABCDNode *a, Graph::ABCDNode *v, int c) {
+		int prove(Graph::ABCDGraph *graph, Graph::active *active, Graph::ABCDNode *a, Graph::ABCDNode *v, int c) {
 
-			Graph::ABCDCheck *check1 = Graph::createABCDCheck(a, v, -1);
-			Graph::ABCDCheck *check2 = Graph::createABCDCheck(a, v, 0);
-			Graph::ABCDCheck *check3 = Graph::createABCDCheck(a, v, 1);
+			/*			Graph::ABCDCheck *check1 = Graph::createABCDCheck(a, v, -1);
+						Graph::ABCDCheck *check2 = Graph::createABCDCheck(a, v, 0);
+						Graph::ABCDCheck *check3 = Graph::createABCDCheck(a, v, 1);
 
 			//printContentsOfActive(active);
 			//printContentsOfC(C);
@@ -231,221 +240,238 @@ namespace {
 			bool hasCheck1 = C->valueMap.find(*check1) == C->valueMap.end();
 			bool hasCheck2 = C->valueMap.find(*check2) == C->valueMap.end();
 			bool hasCheck3 = C->valueMap.find(*check3) == C->valueMap.end();
-
-			if ( c == -1 ) {
-				// same or stronger difference was already proven
-				if ( hasCheck1 ) {
-					int result = C->valueMap.find(*check1)->second;
-					if ( result == 1 ) {
-						//errs() << "same or stronger difference was already proven\n";
-						return 1;
-					}
-				}
-				// same or weaker difference was already proven
-				if ( hasCheck1 || hasCheck2 || hasCheck3 ) {
-					bool result = false;
-					if ( hasCheck1 && C->valueMap.find(*check1)->second == -1 ) {
-						result = true;
-					}
-					else if ( hasCheck2 && C->valueMap.find(*check2)->second == -1 ) {
-						result = true;
-					}
-					else if ( hasCheck3 && C->valueMap.find(*check3)->second == -1 ) {
-						result = true;
-					}
-					if ( result == true ) {
-						//errs() << "same or weaker difference was already proven\n";
-						return -1;
-					}
-				}
-				// v is on a cycle that was reduced for same or stronger difference
-				if ( hasCheck1 ) {
-					int result = C->valueMap.find(*check1)->second;
-					if ( result == 0 ) {
-						//errs() << "v is on a cycle that was reduced for same or stronger difference\n";
-						return 0;
-					}
-				}
+			 */
+			/*	if ( c == -1 ) {
+			// same or stronger difference was already proven
+			if ( hasCheck1 ) {
+			int result = C->valueMap.find(*check1)->second;
+			if ( result == 1 ) {
+			//errs() << "same or stronger difference was already proven\n";
+			return 1;
+			}
+			}
+			// same or weaker difference was already proven
+			if ( hasCheck1 || hasCheck2 || hasCheck3 ) {
+			bool result = false;
+			if ( hasCheck1 && C->valueMap.find(*check1)->second == -1 ) {
+			result = true;
+			}
+			else if ( hasCheck2 && C->valueMap.find(*check2)->second == -1 ) {
+			result = true;
+			}
+			else if ( hasCheck3 && C->valueMap.find(*check3)->second == -1 ) {
+			result = true;
+			}
+			if ( result == true ) {
+			//errs() << "same or weaker difference was already proven\n";
+			return -1;
+			}
+			}
+			// v is on a cycle that was reduced for same or stronger difference
+			if ( hasCheck1 ) {
+			int result = C->valueMap.find(*check1)->second;
+			if ( result == 0 ) {
+			//errs() << "v is on a cycle that was reduced for same or stronger difference\n";
+			return 0;
+			}
+			}
 			}
 			else if ( c == 0 ) {
-				// same or stronger difference was already proven
-				if ( hasCheck1 || hasCheck2 ) {
-					bool result = false;
-					if ( hasCheck1 && C->valueMap.find(*check1)->second == 1 ) {
-						result = true;
-					}
-					else if ( hasCheck2 && C->valueMap.find(*check2)->second == 1 ) {
-						result = true;
-					}
-					if ( result == true ) {
-						//errs() << "same or stronger difference was already proven\n";
-						return 1;
-					}
-				}
-				// same or weaker difference was already proven
-				if ( hasCheck2 || hasCheck3 ) {
-					bool result = false;
-					if ( hasCheck2 && C->valueMap.find(*check2)->second == -1 ) {
-						result = true;
-					}
-					else if ( hasCheck3 && C->valueMap.find(*check3)->second == -1 ) {
-						result = true;
-					}
-					if ( result == true) {
-						//errs() << "same or weaker difference was already proven\n";
-						return -1;
-					}
-				}
-				// v is on a cycle that was reduced for same or stronger difference
-				if ( hasCheck1 || hasCheck2 ) {
-					bool result = false;
-					if ( hasCheck1 && C->valueMap.find(*check1)->second == 0 ) {
-						result = true;
-					}
-					else if ( hasCheck2 && C->valueMap.find(*check2)->second == 0 ) {
-						result = true;
-					}
-					if ( result == true ) {
-						//errs() << "v is on a cycle that was reduced for same or stronger difference\n";
-						return 0;
-					}
-				}
+			// same or stronger difference was already proven
+			if ( hasCheck1 || hasCheck2 ) {
+			bool result = false;
+			if ( hasCheck1 && C->valueMap.find(*check1)->second == 1 ) {
+			result = true;
+			}
+			else if ( hasCheck2 && C->valueMap.find(*check2)->second == 1 ) {
+			result = true;
+			}
+			if ( result == true ) {
+			//errs() << "same or stronger difference was already proven\n";
+			return 1;
+			}
+			}
+			// same or weaker difference was already proven
+			if ( hasCheck2 || hasCheck3 ) {
+			bool result = false;
+			if ( hasCheck2 && C->valueMap.find(*check2)->second == -1 ) {
+			result = true;
+			}
+			else if ( hasCheck3 && C->valueMap.find(*check3)->second == -1 ) {
+			result = true;
+			}
+			if ( result == true) {
+			//errs() << "same or weaker difference was already proven\n";
+			return -1;
+			}
+			}
+			// v is on a cycle that was reduced for same or stronger difference
+			if ( hasCheck1 || hasCheck2 ) {
+			bool result = false;
+			if ( hasCheck1 && C->valueMap.find(*check1)->second == 0 ) {
+			result = true;
+			}
+			else if ( hasCheck2 && C->valueMap.find(*check2)->second == 0 ) {
+			result = true;
+		}
+		if ( result == true ) {
+			//errs() << "v is on a cycle that was reduced for same or stronger difference\n";
+			return 0;
+		}
+		}
 
-			}
-			else if ( c == 1 ) {
-				// same or stronger difference was already proven
-				if ( hasCheck1 || hasCheck2 || hasCheck3 ) {
-					bool result = false;
-					if ( hasCheck1 && C->valueMap.find(*check1)->second == 1 ) {
-						result = true;
-					}
-					else if ( hasCheck2 && C->valueMap.find(*check2)->second == 1 ) {
-						result = true;
-					}
-					else if ( hasCheck3 && C->valueMap.find(*check3)->second == 1 ) {
-						result = true;
-					}
-					if ( result == true ) {
-						//errs() << "same or stronger difference was already proven\n";
-						return 1;
-					}
+		}
+		else if ( c == 1 ) {
+			// same or stronger difference was already proven
+			if ( hasCheck1 || hasCheck2 || hasCheck3 ) {
+				bool result = false;
+				if ( hasCheck1 && C->valueMap.find(*check1)->second == 1 ) {
+					result = true;
 				}
-				// same or weaker difference was already proven
-				if ( hasCheck3 ) {
-					int result = C->valueMap.find(*check3)->second;
-					if ( result == -1 ) {
-						//errs() << "same or weaker difference was already proven\n";
-						return -1;
-					}
+				else if ( hasCheck2 && C->valueMap.find(*check2)->second == 1 ) {
+					result = true;
 				}
-				// v is on a cycle that was reduced for same or stronger difference
-				if ( hasCheck1 || hasCheck2 || hasCheck3 ) {
-					bool result = false;
-					if ( hasCheck1 && C->valueMap.find(*check1)->second == 0 ) {
-						result = true;
-					}
-					else if ( hasCheck2 && C->valueMap.find(*check2)->second == 0 ) {
-						result = true;
-					}
-					else if ( hasCheck3 && C->valueMap.find(*check3)->second == 0 ) {
-						result = true;
-					}
-					if ( result == true ) {
-						//errs() << "v is on a cycle that was reduced for same or stronger difference\n";
-						return 0;
-					}
+				else if ( hasCheck3 && C->valueMap.find(*check3)->second == 1 ) {
+					result = true;
+				}
+				if ( result == true ) {
+					//errs() << "same or stronger difference was already proven\n";
+					return 1;
 				}
 			}
+			// same or weaker difference was already proven
+			if ( hasCheck3 ) {
+				int result = C->valueMap.find(*check3)->second;
+				if ( result == -1 ) {
+					//errs() << "same or weaker difference was already proven\n";
+					return -1;
+				}
+			}
+			// v is on a cycle that was reduced for same or stronger difference
+			if ( hasCheck1 || hasCheck2 || hasCheck3 ) {
+				bool result = false;
+				if ( hasCheck1 && C->valueMap.find(*check1)->second == 0 ) {
+					result = true;
+				}
+				else if ( hasCheck2 && C->valueMap.find(*check2)->second == 0 ) {
+					result = true;
+				}
+				else if ( hasCheck3 && C->valueMap.find(*check3)->second == 0 ) {
+					result = true;
+				}
+				if ( result == true ) {
+					//errs() << "v is on a cycle that was reduced for same or stronger difference\n";
+					return 0;
+				}
+			}
+		}*/
 
-			// traversal reached the source vertex, success if a - a <= c
-			if ( v == a && c >= 0 ) {
-				//errs() << "traversal reached the source vertex, success if a - a <= c\n";
-				return 1;
-			}
+		// traversal reached the source vertex, success if a - a <= c
+		if ( v == a && c >= 0 ) {
+			//errs() << "traversal reached the source vertex, success if a - a <= c\n";
+			return 1;
+		}else if( v == a && c < 0){
+			//errs() << "traversal reached the source vertex, failure since a - a > c where  c = " << c << "\n";
+			return -1;
+		}
 
-			// if no constraint exist on the value of v, we fail
-			if ( v->inList.size() == 0 ) {
-				//errs() << "if no constraint exist on the value of v, we fail\n";
-				return -1;
-			}
-			
+		// if no constraint exist on the value of v, we fail
+		if ( v->inList.size() == 0 ) {
+			//errs() << "if no constraint exist on the value of v, we fail\n";
+			return -1;
+		}
 
-			// a cycle was encountered
-			if ( active->valueMap.find(v) != active->valueMap.end() ) {
-				if ( c > active->valueMap.find(v)->second ) {
-					//errs() << "an amplifying cycle\n";
-					return -1; // an amplifying cycle
-				}
-				else {
-					//errs() << "a harmless cycle\n";
-					return 0; // a "harmless" cycle
-				}
-			}
-			
-			//errs() << "added a value to Active\n";
-			active->valueMap.insert(std::pair<Graph::ABCDNode *, int>(v, c) );
-			
-/*			// create set of edges for recursive part of algorithm
-			std::vector<Graph::ABCDEdge *> edges;
-			std::map<Value *, Graph::ABCDNode *> vertices = graph->variableList;
-			for ( std::map<Value *, Graph::ABCDNode *>::iterator i = vertices.begin(); i != vertices.end(); i++ ) {
-				// iterator over all outgoing edges, we are going to compare i and j vertices				
-				std::map<Graph::ABCDNode * , int > outList = i->second->outList;
-				Graph::ABCDNode *u = i->second;
-				for ( std::map<Graph::ABCDNode *, int >::iterator j = outList.begin(); j != outList.end(); j++ ) {
-					Graph::ABCDNode *v = j->first;				
-					int value = j->second;
-					edges.push_back(Graph::createABCDEdge(u,v,value));
-				}
-			}
-*/
-			
-			Graph::ABCDCheck *check = Graph::createABCDCheck(a, v, c);
 
-			if ( v->isPhi == true ) {
-				//errs() << "v is Phi node\n";
-				for(std::map<Graph::ABCDNode * , int>::iterator i = (v->inList).begin(); i != (v->inList).end(); i++){
-					Graph::ABCDNode *u = i->first;
-					int d = i->second;
-					int prove_result = prove(graph, active, C, a, i->first, c - d);
-					Graph::ABCDCheck* existingCheck = Graph::getABCDCheck(C,a,v,c);
-					
-				
-					if(existingCheck == NULL){
-						C->valueMap.insert(std::pair<Graph::ABCDCheck, int>(*check,prove_result));
-					}else{
-						int existingValue = getValue(C, *existingCheck);
-						int meetResult = meetOperation(prove_result,existingValue,1);
-						C->valueMap.erase(*check);
-						C->valueMap.insert(std::pair<Graph::ABCDCheck, int>(*check,meetResult));	
-					}
-					
-				}
+		// a cycle was encountered
+		if ( active->valueMap.find(v) != active->valueMap.end() ) {
+			if ( c < active->valueMap.find(v)->second ) {
+				//errs() << "an amplifying cycle\n";
+				return -1; // an amplifying cycle
 			}
 			else {
-				//errs() << "v is Non-Phi node\n";
-				for(std::map<Graph::ABCDNode * , int>::iterator i = (v->inList).begin(); i != (v->inList).end(); i++){
-					Graph::ABCDNode *u = i->first;
-					int d = i->second;
-					int prove_result = prove(graph, active, C, a, i->first, c - d);
-					Graph::ABCDCheck* existingCheck = Graph::getABCDCheck(C,a,v,c);
-					
-				
-					if(existingCheck == NULL){
-						C->valueMap.insert(std::pair<Graph::ABCDCheck, int>(*check,prove_result));
-					}else{
-						int existingValue = getValue(C, *existingCheck);
-						int meetResult = meetOperation(prove_result,existingValue,0);
-						C->valueMap.erase(*check);
-						C->valueMap.insert(std::pair<Graph::ABCDCheck, int>(*check,meetResult));	
-					}
-					
-				}
+				//errs() << "a harmless cycle\n";
+				return 0; // a "harmless" cycle
 			}
-			
-			active->valueMap.erase(v); // active[v] = NULL
+		}
 
-			return Graph::getValue(C, *check); // return C[v - a <= c]
+		//errs() << "added a value to Active\n";
+		active->valueMap.insert(std::pair<Graph::ABCDNode *, int>(v, c) );
+
+		/*			// create set of edges for recursive part of algorithm
+					std::vector<Graph::ABCDEdge *> edges;
+					std::map<Value *, Graph::ABCDNode *> vertices = graph->variableList;
+					for ( std::map<Value *, Graph::ABCDNode *>::iterator i = vertices.begin(); i != vertices.end(); i++ ) {
+		// iterator over all outgoing edges, we are going to compare i and j vertices				
+		std::map<Graph::ABCDNode * , int > outList = i->second->outList;
+		Graph::ABCDNode *u = i->second;
+		for ( std::map<Graph::ABCDNode *, int >::iterator j = outList.begin(); j != outList.end(); j++ ) {
+		Graph::ABCDNode *v = j->first;				
+		int value = j->second;
+		edges.push_back(Graph::createABCDEdge(u,v,value));
+		}
+		}
+		 */
+
+		//Graph::ABCDCheck *check = Graph::createABCDCheck(a, v, c);
+		int check = -1;
+		int isExistingCheck = 0;
+
+		if ( v->isPhi == true ) {
+			//errs() << "v is Phi node\n";
+			for(std::map<Graph::ABCDNode * , int>::iterator i = (v->inList).begin(); i != (v->inList).end(); i++){
+				Graph::ABCDNode *u = i->first;
+				int d = i->second;
+				int prove_result = prove(graph, active, a, i->first, c - d);
+				//Graph::ABCDCheck* existingCheck = Graph::getABCDCheck(C,a,v,c);
+
+
+				if(isExistingCheck == 0){
+					//C->valueMap.insert(std::pair<Graph::ABCDCheck, int>(*check,prove_result));
+					check = prove_result;
+					isExistingCheck = 1;
+				}else{
+					//int existingValue = getValue(C, *existingCheck);
+					int meetResult = meetOperation(prove_result,check,1);
+					//std::map<Graph::ABCDCheck, int>::iterator existingCheck_it = C->valueMap.find(*existingCheck);
+					//C->valueMap.erase(existingCheck_it);
+					//C->valueMap.erase(*check);
+					//C->valueMap.insert(std::pair<Graph::ABCDCheck, int>(*check,meetResult));
+					check = meetResult;	
+				}
+
+			}
+		}
+		else {
+			//errs() << "v is Non-Phi node\n";
+			for(std::map<Graph::ABCDNode * , int>::iterator i = (v->inList).begin(); i != (v->inList).end(); i++){
+				Graph::ABCDNode *u = i->first;
+				int d = i->second;
+				int prove_result = prove(graph, active, a, i->first, c - d);
+				//Graph::ABCDCheck* existingCheck = Graph::getABCDCheck(C,a,v,c);
+
+
+				if(isExistingCheck == 0){
+					//C->valueMap.insert(std::pair<Graph::ABCDCheck, int>(*check,prove_result));
+					check = prove_result;
+					isExistingCheck = 1;
+				}else{
+					//int existingValue = getValue(C, *existingCheck);
+					int meetResult = meetOperation(prove_result,check,0);
+					//std::map<Graph::ABCDCheck, int>::iterator existingCheck_it = C->valueMap.find(*existingCheck);
+					//C->valueMap.erase(existingCheck_it);
+					//C->valueMap.erase(*check);
+					//C->valueMap.insert(std::pair<Graph::ABCDCheck, int>(*check,meetResult));
+					check = meetResult;	
+				}
+
+			}
+		}
+
+		std::map<Graph::ABCDNode*, int>::iterator active_it = active->valueMap.find(v);
+		active->valueMap.erase(active_it); // active[v] = NULL
+
+		//return Graph::getValue(C, *check); // return C[v - a <= c]
+		return check;
 		}
 
 		virtual bool runOnFunction(Function &F){
@@ -479,7 +505,7 @@ namespace {
 								continue;
 							ConstantInt *cons = (ConstantInt *)inVal;
 							for (std::map<Value*, Graph::ABCDNode* >::iterator AI = (*arrayLengthPtr).begin(),
-							   AE = (*arrayLengthPtr).end(); AI != AE; ++AI){
+									AE = (*arrayLengthPtr).end(); AI != AE; ++AI){
 								//weight of the edge = cons - arraylength
 								Graph::insertEdge((*AI).second, res, cons->getSExtValue() - (*AI).second->length);
 							}
@@ -489,135 +515,177 @@ namespace {
 						Graph::insertEdge(in, res, 0);
 					}
 				}else if(isa<BinaryOperator>(*I)){
-                    int op = I->getOpcode();
-                    if(op == Instruction::Add || op == Instruction::Sub || op == Instruction::FAdd || op == Instruction::FSub){
-                        Value* otherOperand;
-                        ConstantInt* constOperand;
-                        
-                        int opType = ( (op == Instruction::Add || op == Instruction::FAdd) )?1:-1;
-                        if(isa<ConstantInt>(*(I->getOperand(0)))){
-                            constOperand = cast<ConstantInt>(I->getOperand(0));
-                            otherOperand = I->getOperand(1);
-                        }else if(isa<ConstantInt>(*(I->getOperand(1)))){
-                            constOperand = cast<ConstantInt>(I->getOperand(1));
-                            otherOperand = I->getOperand(0);
-                        }else
-                            continue;
-                        
-                        Graph::ABCDNode* nodeFrom = Graph::getOrInsertNode(inequalityGraph,otherOperand,0);
-                        Graph::ABCDNode* nodeTo = Graph::getOrInsertNode(inequalityGraph,(Value*)(&*I),0);
-                        Graph::insertEdge(nodeFrom,nodeTo,(opType * constOperand->getSExtValue()));
-                    }
-                }else if(isa<CallInst>(*I)){
-                    //Deal with pair of PI functions here
-                    inst_iterator temp_I = I;
-                    Graph::ABCDNode* nodeTo[2];
-                    int i = 0, cntPI = 0;
-                    do{
-                        if(cast<CallInst>(&*temp_I)->getCalledFunction()->getName().startswith(StringRef(PIFUNCNAME))){
-                            Graph::ABCDNode* nodeFrom = Graph::getOrInsertNode(inequalityGraph,cast<CallInst>(&*temp_I)->getArgOperand(0),0);
-                            nodeTo[cntPI] = Graph::getOrInsertNode(inequalityGraph,((Value*)&*temp_I),0);
-							//if (!I->getParent()->getTerminator()->getSuccessor(0)->getName().startswith(StringRef("bounds")))						
-                            	Graph::insertEdge(nodeFrom,nodeTo[cntPI],0);
-                            i--;
-                            cntPI++;
-                        }
-                        temp_I++;
-                        i++;
-                    }while(isa<CallInst>(*temp_I) && i == 0);
-                    if(cntPI>0){
-                        int isInTrueBlock = -1;
-                        BranchInst* brI = cast<BranchInst>(I->getParent()->getSinglePredecessor()->getTerminator());
-                        if(brI->getSuccessor(0) == I->getParent())
-                            isInTrueBlock = 1;
-                        
-                        CmpInst* cmpI = cast<CmpInst>(brI->getCondition());
-                        int predicate = cmpI->getPredicate();
-                        int predicateClass;
-                    
-                        if(predicate == CmpInst::FCMP_OLT || predicate == CmpInst::FCMP_ULT || predicate == CmpInst::ICMP_ULT || predicate == CmpInst::ICMP_SLT){
-                            predicate = 1;
-                            predicateClass = 1;
-                        
-                        }else if(predicate == CmpInst::FCMP_OEQ ||predicate == CmpInst::FCMP_OLE || predicate == CmpInst::FCMP_ULE || predicate == CmpInst::FCMP_UEQ || predicate == CmpInst::ICMP_ULE || predicate == CmpInst::ICMP_SLE || predicate == CmpInst::ICMP_EQ){
-                            predicate = 1;
-                            predicateClass = 2;
-                            
-                        }else if(predicate == CmpInst::FCMP_OGT || predicate == CmpInst::FCMP_UGT || predicate == CmpInst::ICMP_UGT || predicate == CmpInst::ICMP_SGT){
-                            predicate = -1;
-                            predicateClass = -1;
-                                
-                        }else if(predicate == CmpInst::FCMP_OGE || predicate == CmpInst::FCMP_UGE || predicate == CmpInst::ICMP_UGE || predicate == CmpInst::ICMP_SGE){
-                            predicate = -1;
-                            predicateClass = -2;
-                        
-                        }else{
-                            predicate = 0;
-                        }
-                        
-                        
-                        Value *operand1, *operand2;
-                        int operandLoc;
-                        
-                        if(cntPI == 1){
-                            if(isa<Constant>(*(cmpI->getOperand(0)))){
-                                operand1 = cmpI->getOperand(1);
-                                operand2 = cmpI->getOperand(0);
-                                operandLoc = -1;
-                            }else{
-                                operand1 = cmpI->getOperand(0);
-                                operand2 = cmpI->getOperand(1);
-                                operandLoc = 1;
-                            }
-                            
-                            if(isInTrueBlock * predicate * operandLoc > 0)//Ignore cases where variable is greater than constant since we
-                                                            //are only considering upper bound checksin this case
-                                for(std::map<Value*, Graph::ABCDNode* >::iterator it = (inequalityGraph->arrayLengthList).begin(); it !=(inequalityGraph->arrayLengthList).end(); ++it){
-                                    if(predicateClass == 1)
-                                        Graph::insertEdge(it->second,nodeTo[0],(cast<ConstantInt>(operand2)->getSExtValue() - 1 - it->second->length));
-                                    else
-                                        Graph::insertEdge(it->second,nodeTo[0],(cast<ConstantInt>(operand2)->getSExtValue() - it->second->length));
-                                
-                                }
-                    
-                        }else{//cntPI == 2
-                            I++;
-                            if(isInTrueBlock == 1 &&  predicate == 1){
-                                if(predicateClass == 1)
-                                    Graph::insertEdge(nodeTo[1], nodeTo[0], -1);
-                                else
-                                    Graph::insertEdge(nodeTo[1], nodeTo[0], 0);
-                            }
-                            else if(isInTrueBlock == 1 &&  predicate == -1){
-                                if(predicateClass == -1)
-                                    Graph::insertEdge(nodeTo[0], nodeTo[1], -1);
-                                else
-                                    Graph::insertEdge(nodeTo[0], nodeTo[1], 0);
-                            }    
-                            else if(isInTrueBlock == -1 &&  predicate == 1){
-                                predicate = cmpI->getPredicate();
-                                if(predicate == CmpInst::FCMP_OLT || predicate == CmpInst::FCMP_ULT || predicate == CmpInst::ICMP_ULT || predicate == CmpInst::ICMP_SLT){
-                                    Graph::insertEdge(nodeTo[0], nodeTo[1], 0);
-                                }else if(predicate == CmpInst::FCMP_OLE || predicate == CmpInst::FCMP_ULE || predicate == CmpInst::ICMP_ULE || predicate == CmpInst::ICMP_SLE){
-                                    Graph::insertEdge(nodeTo[0], nodeTo[1], -1);
-                                }    
-                            }else if(isInTrueBlock == -1 &&  predicate == -1){
-                                predicate = cmpI->getPredicate();
-                                if(predicate == CmpInst::FCMP_OGT || predicate == CmpInst::FCMP_UGT || predicate == CmpInst::ICMP_UGT || predicate == CmpInst::ICMP_SGT){
-                                    Graph::insertEdge(nodeTo[1], nodeTo[0], 0);
-                                }else if(predicate == CmpInst::FCMP_OGE || predicate == CmpInst::FCMP_UGE || predicate == CmpInst::ICMP_UGE || predicate == CmpInst::ICMP_SGE){
-                                    Graph::insertEdge(nodeTo[1], nodeTo[0], -1);
-                                }
-                            }
-                        }
-                    }
-                }
+					int op = I->getOpcode();
+					if(op == Instruction::Add || op == Instruction::Sub || op == Instruction::FAdd || op == Instruction::FSub){
+						Value* otherOperand;
+						ConstantInt* constOperand;
+
+						int opType = ( (op == Instruction::Add || op == Instruction::FAdd) )?1:-1;
+						if(isa<ConstantInt>(*(I->getOperand(0)))){
+							constOperand = cast<ConstantInt>(I->getOperand(0));
+							otherOperand = I->getOperand(1);
+						}else if(isa<ConstantInt>(*(I->getOperand(1)))){
+							constOperand = cast<ConstantInt>(I->getOperand(1));
+							otherOperand = I->getOperand(0);
+						}else
+							continue;
+
+						Graph::ABCDNode* nodeFrom = Graph::getOrInsertNode(inequalityGraph,otherOperand,0);
+						Graph::ABCDNode* nodeTo = Graph::getOrInsertNode(inequalityGraph,(Value*)(&*I),0);
+						Graph::insertEdge(nodeFrom,nodeTo,(opType * constOperand->getSExtValue()));
+					}
+				}else if(isa<SExtInst>(*I)){
+					Value* operand = I->getOperand(0);
+					Graph::ABCDNode* nodeFrom = Graph::getOrInsertNode(inequalityGraph,operand,0);
+					Graph::ABCDNode* nodeTo = Graph::getOrInsertNode(inequalityGraph,(Value*)(&*I),0);
+					Graph::insertEdge(nodeFrom,nodeTo,0);
+
+				}else if(isa<CallInst>(*I)){
+					//I->dump();
+					//Deal with pair of PI functions here
+					inst_iterator temp_I = I;
+					Graph::ABCDNode* nodeTo[2];
+					int i = 0, cntPI = 0;
+					do{
+						Function *func = cast<CallInst>(&*temp_I)->getCalledFunction();
+						if(func != NULL && func->hasName()){
+							if(func->getName().startswith(StringRef(PIFUNCNAME))){
+								Graph::ABCDNode* nodeFrom = Graph::getOrInsertNode(inequalityGraph,cast<CallInst>(&*temp_I)->getArgOperand(0),0);
+								
+								nodeTo[cntPI] = Graph::getOrInsertNode(inequalityGraph,((Value*)&*temp_I),0);
+								//if (!I->getParent()->getTerminator()->getSuccessor(0)->getName().startswith(StringRef("bounds")))						
+								
+								Graph::insertEdge(nodeFrom,nodeTo[cntPI],0);
+								i--;
+								cntPI++;
+							}
+						}
+						temp_I++;
+						i++;
+					}while(isa<CallInst>(*temp_I) && i == 0);
+					
+					if(cntPI>0){
+						int isInTrueBlock = -1;
+						BranchInst* brI = cast<BranchInst>(I->getParent()->getSinglePredecessor()->getTerminator());
+						if(brI->getSuccessor(0) == I->getParent())
+							isInTrueBlock = 1;
+
+						CmpInst* cmpI = cast<CmpInst>(brI->getCondition());
+						int predicate = cmpI->getPredicate();
+						int predicateClass;
+
+						if(predicate == CmpInst::FCMP_OLT || predicate == CmpInst::FCMP_ULT || predicate == CmpInst::ICMP_ULT || predicate == CmpInst::ICMP_SLT){
+							predicate = 1;
+							predicateClass = 1;
+
+						}else if(predicate == CmpInst::FCMP_OEQ ||predicate == CmpInst::FCMP_OLE || predicate == CmpInst::FCMP_ULE || predicate == CmpInst::FCMP_UEQ || predicate == CmpInst::ICMP_ULE || predicate == CmpInst::ICMP_SLE || predicate == CmpInst::ICMP_EQ){
+							predicate = 1;
+							predicateClass = 2;
+
+						}else if(predicate == CmpInst::FCMP_OGT || predicate == CmpInst::FCMP_UGT || predicate == CmpInst::ICMP_UGT || predicate == CmpInst::ICMP_SGT){
+							predicate = -1;
+							predicateClass = -1;
+
+						}else if(predicate == CmpInst::FCMP_OGE || predicate == CmpInst::FCMP_UGE || predicate == CmpInst::ICMP_UGE || predicate == CmpInst::ICMP_SGE){
+							predicate = -1;
+							predicateClass = -2;
+
+						}else{
+							predicate = 0;
+						}
+
+
+						Value *operand1, *operand2;
+						int operandLoc;
+						
+						if(cntPI == 1){
+							if(isa<ConstantInt>(*(cmpI->getOperand(0)))){
+								operand1 = cmpI->getOperand(1);
+								operand2 = cmpI->getOperand(0);
+								operandLoc = -1;
+							}else if(isa<ConstantInt>(*(cmpI->getOperand(1)))){
+								operand1 = cmpI->getOperand(0);
+								operand2 = cmpI->getOperand(1);
+								operandLoc = 1;
+							}else
+								continue;
+							if(isInTrueBlock * predicate * operandLoc > 0)//Ignore cases where variable is greater than constant since we
+								//are only considering upper bound checksin this case
+								for(std::map<Value*, Graph::ABCDNode* >::iterator it = (inequalityGraph->arrayLengthList).begin(); it !=(inequalityGraph->arrayLengthList).end(); ++it){
+									if(predicateClass == 1){
+										Graph::insertEdge(it->second,nodeTo[0],(cast<ConstantInt>(operand2)->getSExtValue() - 1 - it->second->length));
+									}
+									else{
+										Graph::insertEdge(it->second,nodeTo[0],(cast<ConstantInt>(operand2)->getSExtValue() - it->second->length));
+									}
+
+								}
+							
+						}else{//cntPI == 2
+							I++;
+							if(isInTrueBlock == 1 &&  predicate == 1){
+								if(predicateClass == 1)
+									Graph::insertEdge(nodeTo[1], nodeTo[0], -1);
+								else
+									Graph::insertEdge(nodeTo[1], nodeTo[0], 0);
+							}
+							else if(isInTrueBlock == 1 &&  predicate == -1){
+								if(predicateClass == -1)
+									Graph::insertEdge(nodeTo[0], nodeTo[1], -1);
+								else
+									Graph::insertEdge(nodeTo[0], nodeTo[1], 0);
+							}    
+							else if(isInTrueBlock == -1 &&  predicate == 1){
+								predicate = cmpI->getPredicate();
+								if(predicate == CmpInst::FCMP_OLT || predicate == CmpInst::FCMP_ULT || predicate == CmpInst::ICMP_ULT || predicate == CmpInst::ICMP_SLT){
+									Graph::insertEdge(nodeTo[0], nodeTo[1], 0);
+								}else if(predicate == CmpInst::FCMP_OLE || predicate == CmpInst::FCMP_ULE || predicate == CmpInst::ICMP_ULE || predicate == CmpInst::ICMP_SLE){
+									Graph::insertEdge(nodeTo[0], nodeTo[1], -1);
+								}    
+							}else if(isInTrueBlock == -1 &&  predicate == -1){
+								predicate = cmpI->getPredicate();
+								if(predicate == CmpInst::FCMP_OGT || predicate == CmpInst::FCMP_UGT || predicate == CmpInst::ICMP_UGT || predicate == CmpInst::ICMP_SGT){
+									Graph::insertEdge(nodeTo[1], nodeTo[0], 0);
+								}else if(predicate == CmpInst::FCMP_OGE || predicate == CmpInst::FCMP_UGE || predicate == CmpInst::ICMP_UGE || predicate == CmpInst::ICMP_SGE){
+									Graph::insertEdge(nodeTo[1], nodeTo[0], -1);
+								}
+							}
+						}
+
+					}
+				}
 			}
-			
+
+
+			//Print out graph
+			/*			int count = 0;
+						for (std::map<Value *, Graph::ABCDNode* >::iterator PI = inequalityGraph->variableList.begin(),
+						PE = inequalityGraph->variableList.end(); PI != PE; ++PI){
+
+						errs() << "\nNode" << count; PI->first->dump(); //errs() << "\n";
+						for (std::map<Graph::ABCDNode*, int >::iterator PII = PI->second->outList.begin(),
+						PEE = PI->second->outList.end(); PII != PEE; ++PII){
+						errs() << "Node" << count << "outlist::To"; PII->first->value->dump(); errs() << " Weight::" << PII->second << "\n";
+						}
+						count++;
+						}
+
+						for (std::map<Value *, Graph::ABCDNode* >::iterator PI = inequalityGraph->arrayLengthList.begin(),
+						PE = inequalityGraph->arrayLengthList.end(); PI != PE; ++PI){
+
+						errs() << "\nNode" << count; PI->first->dump(); //errs() << "\n";
+						for (std::map<Graph::ABCDNode*, int >::iterator PII = PI->second->outList.begin(),
+						PEE = PI->second->outList.end(); PII != PEE; ++PII){
+						errs() << "Node" << count << "outlist::To";  PII->first->value->dump(); errs() << " Weight::" << PII->second << "\n";
+						}
+						count++;
+						}
+			 */
 			/* Delete redundant check instructions */
 			std::vector<Instruction* > toDeleteList;
 			for (std::vector<Instruction* >::iterator CI = arrayCheckInstList.begin(),
 					CE = arrayCheckInstList.end(); CI != CE; ++CI){
+				//errs() << "Check Insts"; (*CI)->dump(); 
 				User *checkInst = (User *)(*CI);
 				Graph::ABCDNode *source;
 				int length;
@@ -638,28 +706,28 @@ namespace {
 							llvm::ReplaceInstWithInst(parent->getTerminator(), unCondBrInst);
 							break;
 						}
+						}
 					}
 				}
-			}
-			errs() << "Number of array checks: " << arrayCheckInstList.size() << "\n";
-			errs() << "Redundant array checks: " << toDeleteList.size() << "\n";
-			while (!toDeleteList.empty()){
-				Instruction *cur = toDeleteList.back();
-				toDeleteList.pop_back();
-				cur->eraseFromParent();
+				errs() << "Number of array checks: " << arrayCheckInstList.size() << "\n";
+				errs() << "Redundant array checks: " << toDeleteList.size() << "\n";
+				while (!toDeleteList.empty()){
+					Instruction *cur = toDeleteList.back();
+					toDeleteList.pop_back();
+					cur->eraseFromParent();
+				}
+
+				return true;
 			}
 
-			return true;
-		}
-		
-		
-/*		virtual void getAnalysisUsage(AnalysisUsage &AU) const {
-			AU.addRequired<PromotePass>(); 
-//			AU.setPreservesAll();
-    		    }
-*/    		    
-	};
 
-	char ABCDPass::ID = 0;
-	RegisterPass<ABCDPass> X("abcd", "Redundant Check Elimination");
-}
+			/*		virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+					AU.addRequired<PromotePass>(); 
+			//			AU.setPreservesAll();
+			}
+			 */    		    
+		};
+
+		char ABCDPass::ID = 0;
+		RegisterPass<ABCDPass> X("abcd", "Redundant Check Elimination");
+	}
