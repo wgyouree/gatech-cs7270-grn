@@ -1,3 +1,4 @@
+#define DEBUG_TYPE "ABCDPass"
 #include "llvm/Pass.h"
 #include "llvm/Function.h"
 #include "llvm/Module.h"
@@ -24,6 +25,9 @@
 //#include "llvm/Transforms/Utils/ABCDGraph.h"
 
 using namespace llvm;
+
+STATISTIC(ArrayChecks, "Number of array checks");
+STATISTIC(RedundantArrayChecks, "Number of redundant array checks as per ABCD");
 
 namespace Graph{
 
@@ -488,8 +492,10 @@ namespace {
 						Graph::getOrInsertNode(inequalityGraph, (Value *)ai, NumElements);
 					}
 				} else if (isa<ICmpInst>(*I)){
-					if ((*I).getName().startswith(StringRef(CHECKINST)))
+					if ((*I).getName().startswith(StringRef(CHECKINST))){
 						arrayCheckInstList.push_back(&*I);
+						ArrayChecks++;
+					}
 				}
 			}
 			for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I){
@@ -551,10 +557,10 @@ namespace {
 						if(func != NULL && func->hasName()){
 							if(func->getName().startswith(StringRef(PIFUNCNAME))){
 								Graph::ABCDNode* nodeFrom = Graph::getOrInsertNode(inequalityGraph,cast<CallInst>(&*temp_I)->getArgOperand(0),0);
-								
+
 								nodeTo[cntPI] = Graph::getOrInsertNode(inequalityGraph,((Value*)&*temp_I),0);
 								//if (!I->getParent()->getTerminator()->getSuccessor(0)->getName().startswith(StringRef("bounds")))						
-								
+
 								Graph::insertEdge(nodeFrom,nodeTo[cntPI],0);
 								i--;
 								cntPI++;
@@ -563,7 +569,7 @@ namespace {
 						temp_I++;
 						i++;
 					}while(isa<CallInst>(*temp_I) && i == 0);
-					
+
 					if(cntPI>0){
 						int isInTrueBlock = -1;
 						BranchInst* brI = cast<BranchInst>(I->getParent()->getSinglePredecessor()->getTerminator());
@@ -597,7 +603,7 @@ namespace {
 
 						Value *operand1, *operand2;
 						int operandLoc;
-						
+
 						if(cntPI == 1){
 							if(isa<ConstantInt>(*(cmpI->getOperand(0)))){
 								operand1 = cmpI->getOperand(1);
@@ -620,7 +626,7 @@ namespace {
 									}
 
 								}
-							
+
 						}else{//cntPI == 2
 							I++;
 							if(isInTrueBlock == 1 &&  predicate == 1){
@@ -682,6 +688,9 @@ namespace {
 						}
 			 */
 			/* Delete redundant check instructions */
+			
+			//errs() << "Number of array checks: " << arrayCheckInstList.size() << "\n";
+			
 			std::vector<Instruction* > toDeleteList;
 			for (std::vector<Instruction* >::iterator CI = arrayCheckInstList.begin(),
 					CE = arrayCheckInstList.end(); CI != CE; ++CI){
@@ -697,6 +706,7 @@ namespace {
 					if (ANI->second->length == length){
 						if (demandProve(inequalityGraph, ANI->second, source)){//Graph::isRedundant(source, ANI->second)){
 							// delete the instruction and break.
+							RedundantArrayChecks++;
 							BasicBlock *parent = (*CI)->getParent(), *nextBlock;
 							nextBlock = parent->getTerminator()->getSuccessor(1);
 							if (nextBlock->getName().equals(StringRef(EXITNAME)))
@@ -709,8 +719,9 @@ namespace {
 						}
 					}
 				}
-				errs() << "Number of array checks: " << arrayCheckInstList.size() << "\n";
-				errs() << "Redundant array checks: " << toDeleteList.size() << "\n";
+				
+				//errs() << "Number of array checks: " << arrayCheckInstList.size() << "\n";
+				//errs() << "Redundant array checks: " << toDeleteList.size() << "\n";
 				while (!toDeleteList.empty()){
 					Instruction *cur = toDeleteList.back();
 					toDeleteList.pop_back();
