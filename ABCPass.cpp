@@ -1,3 +1,4 @@
+#define DEBUG_TYPE "ABCPass"
 #include "llvm/Pass.h"
 #include "llvm/Function.h"
 #include "llvm/Module.h"
@@ -23,6 +24,9 @@
 #include "llvm/ADT/Twine.h"
 
 using namespace llvm;
+
+STATISTIC(ArrayAccess, "Number of array accesses");
+
 
 namespace {
 
@@ -63,7 +67,9 @@ namespace {
 					arrayAccessInstList.push_back(&*I);
 			}
 			std::list<Instruction *>::iterator instIter;
+			
 			for (instIter = arrayAccessInstList.begin(); instIter != arrayAccessInstList.end(); ++instIter){
+				
 				Instruction *inst = *instIter;
 				GetElementPtrInst *GEPI = cast<GetElementPtrInst>(inst);
 				gep_type_iterator GI = gep_type_begin(GEPI), GE = gep_type_end(GEPI);
@@ -87,15 +93,17 @@ namespace {
 
 				if(value==NULL || NumElements==0)
 					continue;
-               
-         const IntegerType *intType;
-         if(value->getType()->isIntegerTy(64)){
-           intType = IntegerType::get(F.getContext(), 64);
-         }else{
-           intType = IntegerType::get(F.getContext(), 32);
-         }
 
-        ConstantInt *consInt = ConstantInt::get(intType, NumElements);
+				ArrayAccess++;
+				
+				const IntegerType *intType;
+				if(value->getType()->isIntegerTy(64)){
+					intType = IntegerType::get(F.getContext(), 64);
+				}else{
+					intType = IntegerType::get(F.getContext(), 32);
+				}
+
+				ConstantInt *consInt = ConstantInt::get(intType, NumElements);
 				Constant *cons = cast<Constant>(consInt);
 				Value *upperbound = cast<Value>(cons);
 
@@ -119,7 +127,8 @@ namespace {
 
 				llvm::ReplaceInstWithInst(currBlock->getTerminator(), branchInst);
 			}
-			errs() << "Number of array accesses= " << arrayAccessInstList.size() << "\n";
+			//errs() << "Number of array accesses= " << arrayAccessInstList.size() << "\n";
+			//errs() << "Number of array accesses= " << i << "\n";
 
 			return true;
 		}
